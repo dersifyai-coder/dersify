@@ -10,144 +10,296 @@ datasource db {
   extensions = [pgvector(map: "vector")]
 }
 
+// ─── IDENTITY ─────────────────────────────────────────────────────
+
 model Profile {
-  id        String   @id @db.Uuid
-  fullName  String?  @map("full_name")
+  id       String  @id @db.Uuid
+  fullName String? @map("full_name")
+  email    String? @unique
 
   // Onboarding — permanent behavioral profile (SYSTEM 1)
-  motivation          String?  // 'learn-skill'|'career-advance'|'exam-prep'|'build-project'|'academic'|'curiosity'
-  learningApproach    String?  @map("learning_approach")
-  struggleResponse    String?  @map("struggle_response")
-  hoursPerWeek        String?  @map("hours_per_week")   // 'lt1'|'1-3'|'3-5'|'5-10'|'gt10'
-  learningPace        String?  @map("learning_pace")    // 'slow-deep'|'steady'|'fast'|'flexible'
-  onboardingCompleted Boolean  @default(false) @map("onboarding_completed")
+  motivation          String? // 'learn-skill'|'career-advance'|'exam-prep'|'build-project'|'academic'|'curiosity'
+  learningApproach    String? @map("learning_approach")
+  struggleResponse    String? @map("struggle_response")
+  hoursPerWeek        String? @map("hours_per_week") // 'lt1'|'1-3'|'3-5'|'5-10'|'gt10'
+  learningPace        String? @map("learning_pace") // 'slow-deep'|'steady'|'fast'|'flexible'
+  onboardingCompleted Boolean @default(false) @map("onboarding_completed")
+
+  // Calibration — difference between self-report and demonstrated level
+  // Range: -2.0 (chronic overestimator) to +2.0 (chronic underestimator)
+  calibrationScore Float @default(0.0) @map("calibration_score")
 
   // Subscription tier — denormalized for fast gate checks
-  subscriptionTier    String   @default("free") @map("subscription_tier") // 'free'|'pro'|'teams'
+  subscriptionTier String @default("free") @map("subscription_tier") // 'free'|'pro'|'teams'
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  knowledgeStates   LearnerKnowledgeState[]
-  misconceptions    Misconception[]
-  sessions          Session[]
-  goals             LearnerGoal[]
+  knowledgeStates LearnerKnowledgeState[]
+  misconceptions  Misconception[]
+  sessions        Session[]
+  sources         LearnerSource[]
+  subscription    Subscription?
   notificationPrefs NotificationPreference?
 
   @@map("profiles")
 }
 
-model NotificationPreference {
-  learnerId            String   @id @map("learner_id") @db.Uuid
-  emailEnabled         Boolean  @default(true)  @map("email_enabled")
-  dailyReviewReminder  Boolean  @default(true)  @map("daily_review_reminder")
-  weeklyDigestEnabled  Boolean  @default(false) @map("weekly_digest_enabled")
-  reminderHourUtc      Int      @default(9) @map("reminder_hour_utc")
-  timezone             String   @default("UTC")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+// ─── CONCEPT REGISTRY ─────────────────────────────────────────────
 
-  learner Profile @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+model ConceptRegistry {
+  // canonicalId: stable slug — e.g. "business.competitive-analysis.porters-five-forces"
+  // Never changes once set. All knowledge states reference this.
+  canonicalId  String   @id @map("canonical_id")
+  displayName  String   @map("display_name")
+  topic        String
+  aliases      String[] // AI-generated variants that resolve to this canonical
+  prerequisites String[] // canonical_ids of concepts needed before this one
+  related      String[] // canonical_ids of transferable concepts
+  status       String   @default("ai_generated") // 'ai_generated'|'verified'
+  sessionCount Int      @default(0) @map("session_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  @@map("notification_preferences")
+  knowledgeStates LearnerKnowledgeState[]
+  misconceptions  Misconception[]
+
+  @@index([topic, status])
+  @@index([sessionCount(sort: Desc)])
+  @@map("concept_registry")
 }
 
-model LearnerKnowledgeState {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  learnerId      String    @map("learner_id") @db.Uuid
-  conceptId      String    @map("concept_id")
-  easinessFactor Float     @default(2.5) @map("easiness_factor")
-  interval       Int       @default(1)
-  repetitions    Int       @default(0)
-  nextReviewAt   DateTime? @map("next_review_at")
-  lastReviewedAt DateTime? @map("last_reviewed_at")
-  confidence     Float     @default(0.0)
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+// ─── LEARNER MODEL — FSRS ─────────────────────────────────────────
 
-  learner Profile @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+model LearnerKnowledgeState {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  learnerId String @map("learner_id") @db.Uuid
+  conceptId String @map("concept_id") // FK to concept_registry.canonical_id
+  topic     String
+
+  // FSRS algorithm fields
+  stability     Float    @default(0.0) // memory stability in days
+  difficulty    Float    @default(0.3) // inherent difficulty 0.0–1.0
+  elapsedDays   Int      @default(0) @map("elapsed_days")
+  scheduledDays Int      @default(0) @map("scheduled_days")
+  reps          Int      @default(0) // total review count
+  lapses        Int      @default(0) // times forgotten
+  fsrsState     Int      @default(0) @map("fsrs_state") // 0=New 1=Learning 2=Review 3=Relearning
+  due           DateTime @default(now())
+
+  // Derived for display and ContextService
+  confidence     Float     @default(0.0) // 0.0–1.0 derived from stability
+  lastReviewedAt DateTime? @map("last_reviewed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  learner Profile         @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  concept ConceptRegistry @relation(fields: [conceptId], references: [canonicalId])
 
   @@unique([learnerId, conceptId])
-  @@index([learnerId, nextReviewAt])
+  @@index([learnerId, topic, due])
   @@map("learner_knowledge_states")
 }
 
 model Misconception {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  learnerId   String   @map("learner_id") @db.Uuid
-  conceptId   String   @map("concept_id")
-  description String
-  frequency   Int      @default(1)
-  resolved    Boolean  @default(false)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  learnerId String @map("learner_id") @db.Uuid
+  conceptId String @map("concept_id")
+  topic     String
 
-  learner Profile @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  description         String
+  misconceptionType   String  @map("misconception_type")
+  // 'terminology'|'overgeneralization'|'underapplication'|
+  // 'causal_inversion'|'false_analogy'|'structural'
 
-  @@index([learnerId, conceptId])
+  remediationStrategy String? @map("remediation_strategy") // AI-generated
+  frequency           Int     @default(1)
+  resolved            Boolean @default(false)
+  resolvedInSession   String? @map("resolved_in_session") @db.Uuid // session where resolved
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  learner Profile         @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  concept ConceptRegistry @relation(fields: [conceptId], references: [canonicalId])
+
+  @@index([learnerId, topic, resolved])
   @@map("misconceptions")
 }
 
-model Session {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  learnerId       String    @map("learner_id") @db.Uuid
-  startedAt       DateTime  @default(now()) @map("started_at")
-  endedAt         DateTime? @map("ended_at")
-  focusMode       String?   @map("focus_mode")
-  conceptsCovered String[]  @map("concepts_covered")
-  createdAt       DateTime  @default(now()) @map("created_at")
+// ─── SESSION ──────────────────────────────────────────────────────
 
-  learner     Profile      @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+model Session {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  learnerId String @map("learner_id") @db.Uuid
+
+  // Session Diagnostic (SYSTEM 2) fields
+  topic                String
+  priorKnowledgeSignal String @map("prior_knowledge_signal")
+  timeAvailableMinutes Int    @map("time_available_minutes")
+
+  // Session state
+  startedAt    DateTime  @default(now()) @map("started_at")
+  endedAt      DateTime? @map("ended_at")
+  currentPhase String    @default("activation") @map("current_phase")
+  // 'activation'|'core'|'consolidation'
+
+  // Session Intelligence
+  currentMode    String  @default("exploration") @map("current_mode")
+  focusState     String? @map("focus_state") // 'focus'|'diffuse'|'fatigued'|'warming_up'
+  strugglesCount Int     @default(0) @map("struggles_count")
+  momentumCount  Int     @default(0) @map("momentum_count")
+
+  // Outcomes
+  conceptsCovered String[] @map("concepts_covered")
+  exchangesCount  Int      @default(0) @map("exchanges_count")
+  tokenBudgetUsed Int      @default(0) @map("token_budget_used")
+
+  // Continuity
+  lastActivityAt DateTime @default(now()) @map("last_activity_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  learner     Profile          @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  messages    SessionMessage[]
   errorEvents ErrorEvent[]
 
-  @@index([learnerId, startedAt(sort: Desc)])
+  @@index([learnerId, topic, startedAt(sort: Desc)])
   @@map("sessions")
 }
 
-model ErrorEvent {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sessionId      String   @map("session_id") @db.Uuid
-  learnerId      String   @map("learner_id") @db.Uuid
-  conceptId      String   @map("concept_id")
-  questionId     String?  @map("question_id")
-  learnerAnswer  String   @map("learner_answer")
-  correctAnswer  String   @map("correct_answer")
-  errorType      String   @map("error_type")
-  responseTimeMs Int?     @map("response_time_ms")
-  answeredAt     DateTime @default(now()) @map("answered_at")
-  createdAt      DateTime @default(now()) @map("created_at")
+model SessionMessage {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId String @map("session_id") @db.Uuid
+  role      String // 'user' | 'assistant'
+  content   String @db.Text
+  turnIndex Int    @map("turn_index")
+
+  // Compression — raw content replaced with summary after threshold
+  compressed         Boolean @default(false)
+  compressionSummary String? @map("compression_summary") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  @@index([learnerId, createdAt])
+  @@index([sessionId, turnIndex])
+  @@map("session_messages")
+}
+
+model ErrorEvent {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId String @map("session_id") @db.Uuid
+  learnerId String @map("learner_id") @db.Uuid
+  conceptId String @map("concept_id")
+  topic     String
+
+  exchangeText        String   @map("exchange_text") @db.Text
+  errorType           String   @map("error_type")
+  // 'misconception'|'recall_failure'|'careless'
+  understandingSignal String   @map("understanding_signal")
+  // 'confirmed'|'partial'|'confused'|'memorized'|'breakthrough'
+  retentionQuality    Int      @map("retention_quality") // 0-4 (FSRS: Again/Hard/Good/Easy)
+  responseTimeMs      Int?     @map("response_time_ms")
+  answeredAt          DateTime @default(now()) @map("answered_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([learnerId, topic, createdAt])
   @@map("error_events")
 }
 
-model LearnerGoal {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  learnerId  String    @map("learner_id") @db.Uuid
-  subject    String
-  targetDate DateTime? @map("target_date") @db.Date
-  priority   Int       @default(1)
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
+// ─── SOURCES — YOUR SOURCES ───────────────────────────────────────
+
+model LearnerSource {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  learnerId  String @map("learner_id") @db.Uuid
+  topic      String
+  sourceType String @map("source_type") // 'pdf'|'text'|'url'|'youtube'
+  title      String
+  sourceRef  String @map("source_ref") // storage path, URL, or YouTube ID
+  status     String @default("processing") // 'processing'|'ready'|'failed'
+  chunkCount Int    @default(0) @map("chunk_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  learner Profile       @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  chunks  SourceChunk[]
+
+  @@index([learnerId, topic, status])
+  @@map("learner_sources")
+}
+
+model SourceChunk {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId  String @map("source_id") @db.Uuid
+  learnerId String @map("learner_id") @db.Uuid
+  topic     String
+  content   String @db.Text
+  // embedding vector(768) — managed via $queryRaw (pgvector)
+  chunkIndex Int      @default(0) @map("chunk_index")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  source LearnerSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([learnerId, topic])
+  @@map("source_chunks")
+}
+
+// ─── SUBSCRIPTION + USAGE ─────────────────────────────────────────
+
+model Subscription {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  learnerId String @unique @map("learner_id") @db.Uuid
+
+  tier   String @default("free") // 'free'|'pro'|'teams'
+  status String @default("active") // 'active'|'cancelled'|'past_due'|'trialing'
+
+  stripeCustomerId     String? @unique @map("stripe_customer_id")
+  stripeSubscriptionId String? @unique @map("stripe_subscription_id")
+  stripePriceId        String? @map("stripe_price_id")
+
+  currentPeriodStart DateTime? @map("current_period_start")
+  currentPeriodEnd   DateTime? @map("current_period_end")
+  cancelAtPeriodEnd  Boolean   @default(false) @map("cancel_at_period_end")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   learner Profile @relation(fields: [learnerId], references: [id], onDelete: Cascade)
 
-  @@map("learner_goals")
+  @@map("subscriptions")
 }
 
-model CurriculumChunk {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  subject    String
-  conceptId  String   @map("concept_id")
-  content    String
-  // embedding vector(1536) — managed via $queryRaw and prisma-extension-pgvector
-  // NOT represented as a Prisma field due to Prisma's lack of native vector support
-  chunkIndex Int      @default(0) @map("chunk_index")
-  sourceDoc  String?  @map("source_doc")
-  createdAt  DateTime @default(now()) @map("created_at")
+model UsageRecord {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  learnerId String   @map("learner_id") @db.Uuid
+  date      DateTime @db.Date
 
-  @@index([conceptId])
-  @@map("curriculum_chunks")
+  sessionsUsed     Int   @default(0) @map("sessions_used")
+  exchangesUsed    Int   @default(0) @map("exchanges_used")
+  tokensUsed       Int   @default(0) @map("tokens_used")
+  estimatedCostUsd Float @default(0) @map("estimated_cost_usd")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([learnerId, date])
+  @@map("usage_records")
+}
+
+model NotificationPreference {
+  learnerId           String  @id @map("learner_id") @db.Uuid
+  emailEnabled        Boolean @default(true) @map("email_enabled")
+  dailyReviewReminder Boolean @default(true) @map("daily_review_reminder")
+  weeklyDigestEnabled Boolean @default(false) @map("weekly_digest_enabled")
+  reminderHourUtc     Int     @default(9) @map("reminder_hour_utc")
+  timezone            String  @default("UTC")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  learner Profile @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }

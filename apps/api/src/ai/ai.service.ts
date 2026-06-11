@@ -1,6 +1,8 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotImplementedException } from '@nestjs/common';
 
 @Injectable()
 export class AiService {
-  // TODO: Implement AI service.
+  async embed(_text: string): Promise<number[]> {
+    throw new NotImplementedException('AiService.embed() is implemented in F-04.');
+  }
 }
