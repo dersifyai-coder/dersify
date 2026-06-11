@@ -9,6 +9,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { AppConfig } from "../config/configuration";
 import { createSupabaseAdminClient } from "../lib/supabase";
 import { SupabaseJwtPayload } from "./strategies/jwt.strategy";
+import { PrismaService } from "../prisma/prisma.service";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -43,8 +44,12 @@ export interface RefreshResult {
 @Injectable()
 export class AuthService {
   private readonly supabaseAdmin: ReturnType<typeof createSupabaseAdminClient>;
+  private readonly appUrl: string;
 
-  constructor(configService: ConfigService<AppConfig, true>) {
+  constructor(
+    configService: ConfigService<AppConfig, true>,
+    private readonly prisma: PrismaService,
+  ) {
     const supabaseUrl = configService.get("supabase.url", { infer: true });
     const serviceKey = configService.get("supabase.serviceKey", { infer: true });
 
@@ -57,6 +62,7 @@ export class AuthService {
     }
 
     this.supabaseAdmin = createSupabaseAdminClient(supabaseUrl, serviceKey);
+    this.appUrl = configService.get("appUrl", { infer: true });
   }
 
   async register(input: RegisterInput): Promise<ApiResponse<AuthResult>> {
@@ -74,6 +80,7 @@ export class AuthService {
         data: {
           full_name: fullName,
         },
+        emailRedirectTo: `${this.appUrl}/auth/callback`,
       },
     });
 
@@ -85,12 +92,16 @@ export class AuthService {
       throw new BadRequestException("Registration did not return a user.");
     }
 
-    const { error: profileError } = await this.supabaseAdmin.from("profiles").insert({
-      id: data.user.id,
-      full_name: fullName,
-    });
-
-    if (profileError) {
+    try {
+      await this.prisma.profile.create({
+        data: {
+          id: data.user.id,
+          fullName: fullName,
+        },
+      });
+    } catch (profileError) {
+      // Revert user creation if profile fails
+      await this.supabaseAdmin.auth.admin.deleteUser(data.user.id);
       throw new InternalServerErrorException("User was created, but profile creation failed.");
     }
 

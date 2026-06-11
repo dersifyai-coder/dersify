@@ -9,6 +9,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   AuthUser,
   getCurrentUserAction,
@@ -31,6 +32,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const refreshUser = useCallback(async () => {
     setLoading(true);
@@ -59,11 +61,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       await refreshUser();
+
+      if (result.redirectTo) {
+        router.push(result.redirectTo);
+      }
+
       return result.message;
     } finally {
       setLoading(false);
     }
-  }, [refreshUser]);
+  }, [refreshUser, router]);
 
   const register = useCallback(async (fullName: string, email: string, password: string) => {
     setLoading(true);
@@ -79,12 +86,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return result.message ?? "Registration failed.";
       }
 
-      await refreshUser();
+      if (result.redirectTo) {
+        await refreshUser();
+        router.push(result.redirectTo);
+      }
+
       return result.message;
     } finally {
       setLoading(false);
     }
-  }, [refreshUser]);
+  }, [refreshUser, router]);
 
   const logout = useCallback(async () => {
     setLoading(true);

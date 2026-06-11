@@ -3,10 +3,15 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useAuth } from "@/components/auth/auth-context";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const { login, loading } = useAuth();
-  const [message, setMessage] = useState<string | undefined>();
+  const searchParams = useSearchParams();
+  const callbackError = searchParams.get("error");
+  const [message, setMessage] = useState<string | undefined>(
+    callbackError ?? undefined,
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
