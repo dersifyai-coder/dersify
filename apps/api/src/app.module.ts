@@ -8,6 +8,7 @@ import { LearnerModule } from "./learner/learner.module";
 import { RagModule } from "./rag/rag.module";
 import { SessionModule } from "./session/session.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { HealthModule } from "./health/health.module";
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PrismaModule } from "./prisma/prisma.module";
     RagModule,
     CurriculumModule,
     SessionModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

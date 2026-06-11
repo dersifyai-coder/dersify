@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { clearAuthCookies, setAuthCookies } from "./cookies";
 
@@ -13,6 +12,7 @@ export interface AuthUser {
 export interface AuthActionResult {
   success: boolean;
   message?: string;
+  redirectTo?: string;
 }
 
 interface BackendApiResponse<T> {
@@ -72,7 +72,8 @@ async function postAuth(path: string, body: Record<string, string>): Promise<Aut
   }
 
   setAuthCookies(payload.data.session);
-  redirect("/dashboard");
+
+  return { success: true, redirectTo: "/dashboard" };
 }
 
 function getStringValue(formData: FormData, key: string): string {
