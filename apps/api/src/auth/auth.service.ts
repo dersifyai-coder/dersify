@@ -32,9 +32,15 @@ export interface RefreshInput {
   refreshToken: string;
 }
 
+export interface ProfileSummary {
+  onboarding_completed: boolean;
+  subscription_tier: string;
+}
+
 export interface AuthResult {
   user: User;
   session: Session | null;
+  profile: ProfileSummary;
 }
 
 export interface RefreshResult {
@@ -100,7 +106,6 @@ export class AuthService {
         },
       });
     } catch (profileError) {
-      // Revert user creation if profile fails
       await this.supabaseAdmin.auth.admin.deleteUser(data.user.id);
       throw new InternalServerErrorException("User was created, but profile creation failed.");
     }
@@ -108,6 +113,10 @@ export class AuthService {
     return this.ok("Registration successful.", {
       user: data.user,
       session: data.session,
+      profile: {
+        onboarding_completed: false,
+        subscription_tier: "free",
+      },
     });
   }
 
@@ -127,9 +136,18 @@ export class AuthService {
       throw new UnauthorizedException("Invalid login credentials.");
     }
 
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: data.user.id },
+      select: { onboardingCompleted: true, subscriptionTier: true },
+    });
+
     return this.ok("Login successful.", {
       user: data.user,
       session: data.session,
+      profile: {
+        onboarding_completed: profile?.onboardingCompleted ?? false,
+        subscription_tier: profile?.subscriptionTier ?? "free",
+      },
     });
   }
 

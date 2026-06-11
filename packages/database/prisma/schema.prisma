@@ -13,15 +13,43 @@ datasource db {
 model Profile {
   id        String   @id @db.Uuid
   fullName  String?  @map("full_name")
+
+  // Onboarding — permanent behavioral profile (SYSTEM 1)
+  motivation          String?  // 'learn-skill'|'career-advance'|'exam-prep'|'build-project'|'academic'|'curiosity'
+  learningApproach    String?  @map("learning_approach")
+  struggleResponse    String?  @map("struggle_response")
+  hoursPerWeek        String?  @map("hours_per_week")   // 'lt1'|'1-3'|'3-5'|'5-10'|'gt10'
+  learningPace        String?  @map("learning_pace")    // 'slow-deep'|'steady'|'fast'|'flexible'
+  onboardingCompleted Boolean  @default(false) @map("onboarding_completed")
+
+  // Subscription tier — denormalized for fast gate checks
+  subscriptionTier    String   @default("free") @map("subscription_tier") // 'free'|'pro'|'teams'
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  knowledgeStates LearnerKnowledgeState[]
-  misconceptions  Misconception[]
-  sessions        Session[]
-  goals           LearnerGoal[]
+  knowledgeStates   LearnerKnowledgeState[]
+  misconceptions    Misconception[]
+  sessions          Session[]
+  goals             LearnerGoal[]
+  notificationPrefs NotificationPreference?
 
   @@map("profiles")
+}
+
+model NotificationPreference {
+  learnerId            String   @id @map("learner_id") @db.Uuid
+  emailEnabled         Boolean  @default(true)  @map("email_enabled")
+  dailyReviewReminder  Boolean  @default(true)  @map("daily_review_reminder")
+  weeklyDigestEnabled  Boolean  @default(false) @map("weekly_digest_enabled")
+  reminderHourUtc      Int      @default(9) @map("reminder_hour_utc")
+  timezone             String   @default("UTC")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  learner Profile @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }
 
 model LearnerKnowledgeState {

@@ -1,23 +1,39 @@
 import { cookies } from "next/headers";
 
 export const AUTH_COOKIE_NAMES = {
-  accessToken: "dersify_access_token",
+  accessToken:  "dersify_access_token",
   refreshToken: "dersify_refresh_token",
+  profile:      "dersify_profile",
 } as const;
 
 export interface AuthSession {
-  access_token: string;
+  access_token:  string;
   refresh_token: string;
-  expires_in?: number;
-  expires_at?: number;
+  expires_in?:   number;
+  expires_at?:   number;
 }
 
-function getCookieOptions(maxAge?: number) {
+export interface ProfileCookieData {
+  onboarding_completed: boolean;
+}
+
+function getAuthCookieOptions(maxAge?: number) {
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure:   process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
-    path: "/",
+    path:     "/",
+    ...(maxAge ? { maxAge } : {}),
+  };
+}
+
+function getProfileCookieOptions(maxAge?: number) {
+  return {
+    // NOT httpOnly — middleware + client both need to read this
+    httpOnly: false,
+    secure:   process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path:     "/",
     ...(maxAge ? { maxAge } : {}),
   };
 }
@@ -31,19 +47,27 @@ export function getRefreshToken(): string | undefined {
 }
 
 export function setAuthCookies(session: AuthSession): void {
-  const cookieStore = cookies();
-  const accessTokenMaxAge = session.expires_in ?? 60 * 60;
-  const refreshTokenMaxAge = 60 * 60 * 24 * 30;
+  const cookieStore    = cookies();
+  const accessMaxAge   = session.expires_in ?? 60 * 60;
+  const refreshMaxAge  = 60 * 60 * 24 * 30;
 
   cookieStore.set(
     AUTH_COOKIE_NAMES.accessToken,
     session.access_token,
-    getCookieOptions(accessTokenMaxAge),
+    getAuthCookieOptions(accessMaxAge),
   );
   cookieStore.set(
     AUTH_COOKIE_NAMES.refreshToken,
     session.refresh_token,
-    getCookieOptions(refreshTokenMaxAge),
+    getAuthCookieOptions(refreshMaxAge),
+  );
+}
+
+export function setProfileCookie(data: ProfileCookieData): void {
+  cookies().set(
+    AUTH_COOKIE_NAMES.profile,
+    JSON.stringify(data),
+    getProfileCookieOptions(60 * 60 * 24 * 30),
   );
 }
 
@@ -52,4 +76,5 @@ export function clearAuthCookies(): void {
 
   cookieStore.delete(AUTH_COOKIE_NAMES.accessToken);
   cookieStore.delete(AUTH_COOKIE_NAMES.refreshToken);
+  cookieStore.delete(AUTH_COOKIE_NAMES.profile);
 }

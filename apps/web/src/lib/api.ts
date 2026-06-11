@@ -2,6 +2,16 @@ import "server-only";
 
 import { clearAuthCookies, getAccessToken, getRefreshToken, setAuthCookies } from "./auth/cookies";
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 interface BackendApiResponse<T> {
   success: boolean;
   message: string;
@@ -95,7 +105,10 @@ async function parseResponse<T>(response: Response): Promise<T> {
   const payload = (await response.json().catch(() => null)) as BackendApiResponse<T> | null;
 
   if (!response.ok || !payload?.success) {
-    throw new Error(payload?.message ?? `Request failed with status ${response.status}.`);
+    throw new ApiError(
+      payload?.message ?? `Request failed with status ${response.status}.`,
+      response.status,
+    );
   }
 
   return payload.data;
