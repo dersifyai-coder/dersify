@@ -6,6 +6,8 @@ import configuration from "./config/configuration";
 import { CurriculumModule } from "./curriculum/curriculum.module";
 import { LearnerModule } from "./learner/learner.module";
 import { RagModule } from "./rag/rag.module";
+import { SessionModule } from "./session/session.module";
+import { PrismaModule } from "./prisma/prisma.module";
 
 @Module({
   imports: [
@@ -13,11 +15,13 @@ import { RagModule } from "./rag/rag.module";
       isGlobal: true,
       load: [configuration],
     }),
+    PrismaModule,
     AuthModule,
     LearnerModule,
     AiModule,
     RagModule,
     CurriculumModule,
+    SessionModule,
   ],
 })
 export class AppModule {}

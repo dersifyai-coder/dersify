@@ -1,13 +1,22 @@
 {
   "name": "dersify",
-  "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@9.0.0",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-    "dev:web": "npm run dev -w apps/web",
-    "dev:api": "npm run start:dev -w apps/api",
-    "build": "npm run build -w apps/web && npm run build -w apps/api"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "db:generate": "pnpm --filter @dersify/database generate",
+    "db:migrate": "pnpm --filter @dersify/database migrate:dev",
+    "db:studio": "pnpm --filter @dersify/database studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
   }
 }
