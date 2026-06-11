@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 
-export const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL ?? "",
-  process.env.SUPABASE_SERVICE_KEY ?? "",
-);
+export function createSupabaseAdminClient(url: string, serviceKey: string) {
+  return createClient(url, serviceKey);
+}

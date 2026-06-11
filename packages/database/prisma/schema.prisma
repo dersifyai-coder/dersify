@@ -1,0 +1,125 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DATABASE_DIRECT_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+model Profile {
+  id        String   @id @db.Uuid
+  fullName  String?  @map("full_name")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  knowledgeStates LearnerKnowledgeState[]
+  misconceptions  Misconception[]
+  sessions        Session[]
+  goals           LearnerGoal[]
+
+  @@map("profiles")
+}
+
+model LearnerKnowledgeState {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  learnerId      String    @map("learner_id") @db.Uuid
+  conceptId      String    @map("concept_id")
+  easinessFactor Float     @default(2.5) @map("easiness_factor")
+  interval       Int       @default(1)
+  repetitions    Int       @default(0)
+  nextReviewAt   DateTime? @map("next_review_at")
+  lastReviewedAt DateTime? @map("last_reviewed_at")
+  confidence     Float     @default(0.0)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  learner Profile @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@unique([learnerId, conceptId])
+  @@index([learnerId, nextReviewAt])
+  @@map("learner_knowledge_states")
+}
+
+model Misconception {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  learnerId   String   @map("learner_id") @db.Uuid
+  conceptId   String   @map("concept_id")
+  description String
+  frequency   Int      @default(1)
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  learner Profile @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@index([learnerId, conceptId])
+  @@map("misconceptions")
+}
+
+model Session {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  learnerId       String    @map("learner_id") @db.Uuid
+  startedAt       DateTime  @default(now()) @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+  focusMode       String?   @map("focus_mode")
+  conceptsCovered String[]  @map("concepts_covered")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  learner     Profile      @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  errorEvents ErrorEvent[]
+
+  @@index([learnerId, startedAt(sort: Desc)])
+  @@map("sessions")
+}
+
+model ErrorEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId      String   @map("session_id") @db.Uuid
+  learnerId      String   @map("learner_id") @db.Uuid
+  conceptId      String   @map("concept_id")
+  questionId     String?  @map("question_id")
+  learnerAnswer  String   @map("learner_answer")
+  correctAnswer  String   @map("correct_answer")
+  errorType      String   @map("error_type")
+  responseTimeMs Int?     @map("response_time_ms")
+  answeredAt     DateTime @default(now()) @map("answered_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([learnerId, createdAt])
+  @@map("error_events")
+}
+
+model LearnerGoal {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  learnerId  String    @map("learner_id") @db.Uuid
+  subject    String
+  targetDate DateTime? @map("target_date") @db.Date
+  priority   Int       @default(1)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  learner Profile @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@map("learner_goals")
+}
+
+model CurriculumChunk {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subject    String
+  conceptId  String   @map("concept_id")
+  content    String
+  // embedding vector(1536) — managed via $queryRaw and prisma-extension-pgvector
+  // NOT represented as a Prisma field due to Prisma's lack of native vector support
+  chunkIndex Int      @default(0) @map("chunk_index")
+  sourceDoc  String?  @map("source_doc")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([conceptId])
+  @@map("curriculum_chunks")
+}

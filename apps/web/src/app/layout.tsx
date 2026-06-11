@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Sora } from "next/font/google";
+import { AuthProvider } from "@/components/auth/auth-context";
 import "../styles/globals.css";
 
 const sora = Sora({
@@ -25,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${sora.variable} ${jetBrainsMono.variable}`}>
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
