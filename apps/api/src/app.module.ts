@@ -5,6 +5,7 @@ import { AuthModule } from "./auth/auth.module";
 import configuration from "./config/configuration";
 import { CurriculumModule } from "./curriculum/curriculum.module";
 import { LearnerModule } from "./learner/learner.module";
+import { OnboardingModule } from "./onboarding/onboarding.module";
 import { RagModule } from "./rag/rag.module";
 import { SessionModule } from "./session/session.module";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -18,6 +19,7 @@ import { HealthModule } from "./health/health.module";
     }),
     PrismaModule,
     AuthModule,
+    OnboardingModule,
     LearnerModule,
     AiModule,
     RagModule,

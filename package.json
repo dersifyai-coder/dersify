@@ -12,7 +12,7 @@
     "lint": "turbo lint",
     "test": "turbo test",
     "db:generate": "pnpm --filter @dersify/database generate",
-    "db:migrate": "pnpm --filter @dersify/database migrate:dev",
+    "db:migrate": "pnpm --filter @dersify/database migrate:deploy",
     "db:studio": "pnpm --filter @dersify/database studio"
   },
   "devDependencies": {
