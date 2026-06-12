@@ -7,5 +7,6 @@ import { LearnerService } from './learner.service';
   imports: [AuthModule],
   controllers: [LearnerController],
   providers: [LearnerService],
+  exports: [LearnerService],
 })
 export class LearnerModule {}

@@ -1,15 +1,15 @@
-import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
-import { AiModule } from "./ai/ai.module";
-import { AuthModule } from "./auth/auth.module";
-import configuration from "./config/configuration";
-import { CurriculumModule } from "./curriculum/curriculum.module";
-import { LearnerModule } from "./learner/learner.module";
-import { OnboardingModule } from "./onboarding/onboarding.module";
-import { RagModule } from "./rag/rag.module";
-import { SessionModule } from "./session/session.module";
-import { PrismaModule } from "./prisma/prisma.module";
-import { HealthModule } from "./health/health.module";
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { AiModule } from './ai/ai.module';
+import { AuthModule } from './auth/auth.module';
+import { ConceptRegistryModule } from './concept-registry/concept-registry.module';
+import configuration from './config/configuration';
+import { HealthModule } from './health/health.module';
+import { LearnerModule } from './learner/learner.module';
+import { OnboardingModule } from './onboarding/onboarding.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { RagModule } from './rag/rag.module';
+import { SessionModule } from './session/session.module';
 
 @Module({
   imports: [
@@ -22,8 +22,8 @@ import { HealthModule } from "./health/health.module";
     OnboardingModule,
     LearnerModule,
     AiModule,
+    ConceptRegistryModule,
     RagModule,
-    CurriculumModule,
     SessionModule,
     HealthModule,
   ],

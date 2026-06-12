@@ -61,7 +61,7 @@ If you have not done all three, do not write a single line of code.
 - Use `apiFetch` (from `lib/api.ts`) for server-side data fetching in Server Components and server actions.
 - Use `api-client.ts` for browser-side data fetching in client components.
 - Never fetch from the backend using bare `fetch` — always go through the typed wrappers.
-- Never expose `SUPABASE_SERVICE_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` to the frontend.
+- Never expose `SUPABASE_SERVICE_KEY`, `GOOGLE_AI_API_KEY`, `OPENAI_API_KEY`, or `STRIPE_SECRET_KEY` to the frontend.
   Keys without `NEXT_PUBLIC_` prefix must never appear in client components.
 
 ### 2.4 Zod for LLM Output
@@ -95,10 +95,10 @@ If you have not done all three, do not write a single line of code.
 - All learner data tables must have RLS enabled. Non-learner tables (curriculum_chunks) are exempt.
 
 ### 3.4 pgvector
-- Embedding dimension is **1536**. Never change without a full re-embedding migration plan.
+- Embedding dimension is **768** (`EMBEDDING_DIMENSION` constant in `ai.constants.ts`). Never change without: (1) new migration to change column type, (2) re-embedding all source_chunks, (3) updating the constant.
 - Always use cosine similarity: `<=>` operator (not inner product, not L2).
-- The `embedding` column on `curriculum_chunks` is managed via raw SQL in a Prisma migration file.
-  It is not a Prisma schema field. Use `prisma.$queryRaw` or `prisma-extension-pgvector` for vector queries.
+- The `embedding` column on `source_chunks` is managed via raw SQL in a Prisma migration file.
+  It is not a Prisma schema field. Use `prisma.$queryRaw` for vector queries.
 
 ### 3.5 Prisma Usage Rules
 - Inject `PrismaService` (a NestJS wrapper around the Prisma client) — do not import the global `prisma` singleton directly in NestJS services.
@@ -113,9 +113,9 @@ If you have not done all three, do not write a single line of code.
 ## 4. AI / LLM Constraints
 
 ### 4.1 All AI Calls Go Through AiService
-- No component, controller, or other service may import `@anthropic-ai/sdk` or `openai` directly.
+- No component, controller, or other service may import `@google/generative-ai` or `openai` directly.
 - All LLM calls go through `apps/api/src/ai/ai.service.ts`.
-- This enforces fallback logic, token tracking, rate limiting, and error handling in one place.
+- This enforces model routing, fallback logic, token tracking, rate limiting, and error handling in one place.
 
 ### 4.2 Prompts
 - All prompt strings live in `apps/api/src/ai/prompts/` as typed TypeScript functions.
@@ -123,11 +123,12 @@ If you have not done all three, do not write a single line of code.
 - Each prompt file exports: a context interface, an output interface, a Zod schema for the output, and a prompt builder function.
 
 ### 4.3 Fallback Logic
-- Claude (`claude-sonnet-4-6`) is primary. GPT-4o (`gpt-4o`) is fallback.
-- Fallback triggers on: timeout > 10s, HTTP 429, HTTP 5xx from Anthropic.
-- Fallback events must be logged with provider, reason, and timestamp.
+- Every operation uses the model tier defined in `MODEL_ROUTING` in `ai.constants.ts`.
+- Gemini is the primary provider; OpenAI GPT is the fallback. Which specific model depends on the operation — see ARCHITECTURE.md §10.
+- Fallback triggers on: timeout > 10s, HTTP 429, HTTP 5xx from primary provider.
+- Fallback events must be logged with: operation, provider, reason, model, timestamp.
 - If both providers fail: throw `AiUnavailableException`. Never return empty or hallucinated content.
-- Graceful degradation: non-critical AI features (focus mode detection, misconception analysis) must
+- Graceful degradation: non-critical AI features (signal detection, focus heuristic) must
   catch `AiUnavailableException` and proceed without the AI result, not crash the request.
 
 ### 4.4 Validate All LLM Output with Zod
@@ -138,13 +139,9 @@ If you have not done all three, do not write a single line of code.
 
 ### 4.5 Model IDs are Constants
 - Never hardcode model ID strings in service methods.
-- Define model IDs in `apps/api/src/ai/ai.constants.ts`:
-  ```ts
-  export const AI_MODEL_PRIMARY = 'claude-sonnet-4-6';
-  export const AI_MODEL_FALLBACK = 'gpt-4o';
-  export const EMBEDDING_MODEL_PRIMARY = 'text-embedding-ada-002';
-  export const EMBEDDING_MODEL_FALLBACK = 'text-embedding-3-small';
-  ```
+- All model IDs live in `apps/api/src/ai/ai.constants.ts` in the `MODEL_ROUTING` table and embedding constants.
+- Use the `MODEL_ROUTING` table to select the correct model tier for each operation type.
+- Never add a new model string in any other file.
 
 ---
 
@@ -248,10 +245,11 @@ If you have not done all three, do not write a single line of code.
 - Never swallow errors with empty catch blocks.
 
 ### 8.4 No Magic Numbers or Strings
-- SM-2 constants → `sm2.constants.ts`
-- AI model IDs → `ai.constants.ts`
+- FSRS constants → `fsrs.constants.ts`
+- AI model IDs and routing → `ai.constants.ts` (`MODEL_ROUTING`)
 - Queue names → `queue.constants.ts`
 - Difficulty thresholds → `difficulty.constants.ts`
+- Subscription limits → `subscription.constants.ts`
 - Cache TTLs → defined as named constants alongside the cache call
 
 ### 8.5 Package Manager
@@ -264,9 +262,11 @@ If you have not done all three, do not write a single line of code.
 ## 9. Architecture Constraints
 
 ### 9.1 Module Boundaries
-- `AiService` and `RagService` are backend-only. Never call Claude/OpenAI from the frontend.
-- `LearnerService` owns all SM-2 logic. No other service implements SM-2 calculations.
+- `AiService` is backend-only. Never call Gemini or OpenAI from the frontend.
+- `LearnerService` owns all FSRS logic. No other service implements FSRS calculations.
+- `ContextService` owns system prompt assembly. No other service builds AI system prompts.
 - `SessionService` owns all session state. Do not track session data inside `LearnerService` or `AiService`.
+- `SubscriptionService` owns all tier checks and usage recording. Never inline tier logic elsewhere.
 - `QueueModule` is the only place that enqueues jobs. Services call queue methods — they do not import BullMQ directly.
 
 ### 9.2 No Circular Dependencies
@@ -290,7 +290,9 @@ If you have not done all three, do not write a single line of code.
 ## 10. Testing Constraints
 
 ### 10.1 What Must Be Tested
-- SM-2 algorithm (`sm2.ts`) — 100% coverage. This is the core business logic.
+- FSRS algorithm (`fsrs.ts`) — 100% coverage. This is the core business logic.
+- ContextService prompt assembly (`context.service.ts`) — 100% coverage. This is the product intelligence.
+- SignalDetector rule-based triggers — 100% coverage.
 - All prompt builder functions — snapshot tests to catch regressions.
 - All service methods — unit tests with mocked Prisma and mocked AiService.
 - All controller endpoints — e2e tests with Supertest.
