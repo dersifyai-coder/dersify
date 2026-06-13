@@ -7,6 +7,9 @@ export interface AppConfig {
     serviceKey: string;
     jwtSecret: string;
   };
+  googleAi: {
+    apiKey: string;
+  };
   anthropic: {
     apiKey: string;
   };
@@ -31,6 +34,7 @@ export default function configuration(): AppConfig {
       serviceKey: process.env.SUPABASE_SERVICE_KEY ?? '',
       jwtSecret: process.env.SUPABASE_JWT_SECRET ?? '',
     },
+    googleAi: { apiKey: process.env.GOOGLE_AI_API_KEY ?? '' },
     anthropic: { apiKey: process.env.ANTHROPIC_API_KEY ?? '' },
     openai: { apiKey: process.env.OPENAI_API_KEY ?? '' },
     redis: { url: process.env.UPSTASH_REDIS_URL ?? 'redis://localhost:6379' },
