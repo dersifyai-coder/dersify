@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AiModule } from './ai/ai.module';
 import { AuthModule } from './auth/auth.module';
 import { ConceptRegistryModule } from './concept-registry/concept-registry.module';
+import { ContextModule } from './context/context.module';
 import configuration from './config/configuration';
 import { HealthModule } from './health/health.module';
 import { LearnerModule } from './learner/learner.module';
@@ -24,6 +25,7 @@ import { SessionModule } from './session/session.module';
     AiModule,
     ConceptRegistryModule,
     RagModule,
+    ContextModule,
     SessionModule,
     HealthModule,
   ],
