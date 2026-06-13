@@ -9,8 +9,10 @@ import { HealthModule } from './health/health.module';
 import { LearnerModule } from './learner/learner.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { QueueModule } from './queue/queue.module';
 import { RagModule } from './rag/rag.module';
 import { SessionModule } from './session/session.module';
+import { SourcesModule } from './sources/sources.module';
 
 @Module({
   imports: [
@@ -24,7 +26,9 @@ import { SessionModule } from './session/session.module';
     LearnerModule,
     AiModule,
     ConceptRegistryModule,
+    QueueModule,
     RagModule,
+    SourcesModule,
     ContextModule,
     SessionModule,
     HealthModule,
