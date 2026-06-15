@@ -295,6 +295,12 @@ export class LearnerService {
     }
   }
 
+  invalidateCachesForTopic(learnerId: string, topic: string): void {
+    this.invalidateCache(dueKey(learnerId, topic));
+    this.invalidateCache(layer1Key(learnerId, topic));
+    this.invalidateCache(progressKey(learnerId));
+  }
+
   private getCache<T>(key: string): T | undefined {
     const entry = this.cache.get(key) as CacheEntry<T> | undefined;
     if (!entry) return undefined;

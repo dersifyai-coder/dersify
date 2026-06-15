@@ -1,21 +1,36 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Sora } from "next/font/google";
+import { Hanken_Grotesk, IBM_Plex_Mono, Newsreader } from "next/font/google";
 import { AuthProvider } from "@/components/auth/auth-context";
 import "../styles/globals.css";
 
-const sora = Sora({
+const newsreader = Newsreader({
   subsets: ["latin"],
-  variable: "--font-sora",
+  variable: "--font-newsreader",
+  display: "swap",
 });
 
-const jetBrainsMono = JetBrains_Mono({
+const hankenGrotesk = Hanken_Grotesk({
   subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
+  variable: "--font-hanken",
+  display: "swap",
 });
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  variable: "--font-ibm-plex-mono",
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
+const fontVariables = [
+  newsreader.variable,
+  hankenGrotesk.variable,
+  ibmPlexMono.variable,
+].join(" ");
 
 export const metadata: Metadata = {
   title: "Dersify",
-  description: "AI-native learning platform",
+  description: "The adaptive tutor that learns how you learn.",
 };
 
 export default function RootLayout({
@@ -25,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${sora.variable} ${jetBrainsMono.variable}`}>
+      <body className={fontVariables}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

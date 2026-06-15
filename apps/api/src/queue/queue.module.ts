@@ -6,6 +6,7 @@ import {
   QUEUE_COST_MONITOR,
   QUEUE_DAILY_REVIEW_REMINDER,
   QUEUE_EMBEDDING_GENERATION,
+  QUEUE_SESSION_CONSOLIDATION,
   QUEUE_USAGE_SYNC,
   QUEUE_WEEKLY_DIGEST,
 } from './queue.constants';
@@ -33,6 +34,7 @@ import { type AppConfig } from '../config/configuration';
       { name: QUEUE_DAILY_REVIEW_REMINDER },
       { name: QUEUE_USAGE_SYNC },
       { name: QUEUE_COST_MONITOR },
+      { name: QUEUE_SESSION_CONSOLIDATION },
     ),
     AiModule,
   ],

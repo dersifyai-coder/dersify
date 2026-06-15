@@ -4,3 +4,4 @@ export const QUEUE_WEEKLY_DIGEST = 'weekly-digest';
 export const QUEUE_DAILY_REVIEW_REMINDER = 'daily-review-reminder';
 export const QUEUE_USAGE_SYNC = 'usage-sync';
 export const QUEUE_COST_MONITOR = 'cost-monitor';
+export const QUEUE_SESSION_CONSOLIDATION = 'session-consolidation';
