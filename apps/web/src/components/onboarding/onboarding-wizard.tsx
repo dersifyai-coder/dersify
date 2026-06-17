@@ -266,7 +266,7 @@ function Step1({
         Step 1 of 3
       </p>
       <h1 className="font-sora text-2xl font-bold text-navy mb-1">
-        What's driving you to learn right now?
+        What&apos;s driving you to learn right now?
       </h1>
       <p className="text-sm text-navy/50 mb-6">Choose one that fits best.</p>
 
@@ -380,7 +380,7 @@ function Step3({
 
       <div>
         <p className="text-sm font-semibold text-navy mb-3">
-          What's your learning pace?
+          What&apos;s your learning pace?
         </p>
         <div className="grid grid-cols-2 gap-2">
           {PACE_OPTIONS.map((opt) => (

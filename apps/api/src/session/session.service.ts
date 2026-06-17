@@ -9,6 +9,7 @@ import { Queue } from 'bullmq';
 import { Prisma, Session, SessionMessage } from '@dersify/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { AiUnavailableException } from '../ai/exceptions/ai-unavailable.exception';
 import { ContextService } from '../context/context.service';
 import { ContextBudgetManager } from '../context/context-budget.manager';
 import { SignalDetectorService } from '../context/signal-detector.service';
@@ -19,6 +20,8 @@ import {
 } from '../context/session-insights';
 import { evaluateModeShift } from '../context/mode-shifts';
 import { LearnerService } from '../learner/learner.service';
+import { MisconceptionType } from '../learner/dto/add-misconception.dto';
+import { ConceptRegistryService } from '../concept-registry/concept-registry.service';
 import { RedisService } from '../redis/redis.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { QUEUE_SESSION_CONSOLIDATION } from '../queue/queue.constants';
@@ -26,6 +29,12 @@ import {
   buildSessionOpeningMessages,
   buildSessionTurnMessages,
 } from '../ai/prompts/session-turn.prompt';
+import {
+  buildExchangeEvaluationPrompt,
+  ExchangeEvaluation,
+  ExchangeEvaluationContext,
+  ExchangeEvaluationSchema,
+} from '../ai/prompts/exchange-evaluation.prompt';
 import { StartSessionDto } from './dto/start-session.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 
@@ -41,6 +50,36 @@ const TIER_EXCHANGE_LIMITS: Record<string, number> = {
 };
 
 const PHASE_TRANSITION_THRESHOLD = 0.85;
+
+// Maps FSRS retentionQuality (1-4) to demonstrated-level scale (0-5)
+const RETENTION_QUALITY_SCALE: Record<1 | 2 | 3 | 4, number> = {
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 5,
+};
+
+// Maps prior_knowledge_signal string to a 0-5 scale for calibrationDelta
+const SELF_REPORTED_LEVEL_SCALE: Record<string, number> = {
+  none: 0,
+  beginner: 1,
+  elementary: 1.5,
+  intermediate: 2.5,
+  'upper-intermediate': 3.5,
+  advanced: 4,
+  expert: 5,
+};
+const DEFAULT_SELF_REPORTED_SCALE = 2.5;
+
+function selfReportedToScale(level: string): number {
+  return SELF_REPORTED_LEVEL_SCALE[level.toLowerCase()] ?? DEFAULT_SELF_REPORTED_SCALE;
+}
+
+function deriveErrorType(evaluation: ExchangeEvaluation): string {
+  if (evaluation.misconceptionDetected.found) return 'misconception';
+  if (evaluation.retentionQuality === 1) return 'recall_failure';
+  return 'careless';
+}
 
 function insightsKey(sessionId: string): string {
   return `dersify:insights:${sessionId}`;
@@ -79,6 +118,7 @@ export class SessionService {
     private readonly budgetManager: ContextBudgetManager,
     private readonly signalDetector: SignalDetectorService,
     private readonly learnerService: LearnerService,
+    private readonly conceptRegistryService: ConceptRegistryService,
     private readonly redisService: RedisService,
     private readonly subscriptionService: SubscriptionService,
     @InjectQueue(QUEUE_SESSION_CONSOLIDATION)
@@ -268,12 +308,120 @@ export class SessionService {
 
     await this.saveInsights(sessionId, updatedInsights);
 
+    const evalContext: ExchangeEvaluationContext = {
+      topic: session.topic,
+      conceptInFocus:
+        updatedInsights.conceptsEngaged[updatedInsights.conceptsEngaged.length - 1] ??
+        session.topic,
+      sessionPhase: newPhase,
+      aiMessage: aiResponse,
+      learnerResponse: dto.content,
+    };
+
+    // Fire-and-forget — does not block the response
+    this.evaluateExchange(learnerId, sessionId, evalContext, updatedInsights).catch((err: unknown) => {
+      this.logger.error('Exchange evaluation failed', {
+        sessionId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+
     return {
       message: aiResponse,
       phase: newPhase,
       mode: newMode,
       exchangesCount: newExchangesCount,
     };
+  }
+
+  async evaluateExchange(
+    learnerId: string,
+    sessionId: string,
+    context: ExchangeEvaluationContext,
+    insights: SessionInsights,
+  ): Promise<void> {
+    let evaluation: ExchangeEvaluation;
+
+    try {
+      const prompt = buildExchangeEvaluationPrompt(context);
+      evaluation = await this.aiService.chatWithSchema(
+        'exchange_evaluation',
+        prompt,
+        ExchangeEvaluationSchema,
+      );
+    } catch (err) {
+      if (err instanceof AiUnavailableException) {
+        this.logger.warn('exchange_evaluation_unavailable', {
+          sessionId,
+          reason: err.message,
+        });
+        return;
+      }
+      throw err;
+    }
+
+    const { canonicalId: resolvedConceptId } =
+      await this.conceptRegistryService.resolveOrCreate(evaluation.conceptId, context.topic);
+
+    await this.learnerService.upsertKnowledgeState(
+      learnerId,
+      resolvedConceptId,
+      context.topic,
+      evaluation.retentionQuality,
+    );
+
+    let updatedInsights = insights;
+
+    if (
+      evaluation.misconceptionDetected.found &&
+      evaluation.misconceptionDetected.description &&
+      evaluation.misconceptionDetected.type
+    ) {
+      await this.learnerService.addMisconception(learnerId, {
+        conceptId: resolvedConceptId,
+        topic: context.topic,
+        description: evaluation.misconceptionDetected.description,
+        misconceptionType: evaluation.misconceptionDetected.type as MisconceptionType,
+      });
+
+      updatedInsights = {
+        ...updatedInsights,
+        newMisconceptionsDetected: [
+          ...updatedInsights.newMisconceptionsDetected,
+          {
+            conceptId: resolvedConceptId,
+            description: evaluation.misconceptionDetected.description,
+            type: evaluation.misconceptionDetected.type,
+            detectedAt: updatedInsights.conceptsEngaged.length,
+          },
+        ],
+      };
+    }
+
+    const ratingScale = RETENTION_QUALITY_SCALE[evaluation.retentionQuality];
+    const newDemonstrated = updatedInsights.demonstratedLevel * 0.7 + ratingScale * 0.3;
+    const selfReportedScale = selfReportedToScale(insights.selfReportedLevel);
+
+    updatedInsights = {
+      ...updatedInsights,
+      demonstratedLevel: newDemonstrated,
+      calibrationDelta: newDemonstrated - selfReportedScale,
+    };
+
+    await this.prisma.errorEvent.create({
+      data: {
+        sessionId,
+        learnerId,
+        conceptId: resolvedConceptId,
+        topic: context.topic,
+        exchangeText: `AI: ${context.aiMessage}\nLearner: ${context.learnerResponse}`,
+        errorType: deriveErrorType(evaluation),
+        understandingSignal: evaluation.understandingSignal,
+        retentionQuality: evaluation.retentionQuality,
+      },
+    });
+
+    await this.saveInsights(sessionId, updatedInsights);
   }
 
   async endSession(learnerId: string, sessionId: string): Promise<void> {

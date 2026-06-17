@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AiModule } from '../ai/ai.module';
+import { ConceptRegistryModule } from '../concept-registry/concept-registry.module';
 import { ContextModule } from '../context/context.module';
 import { LearnerModule } from '../learner/learner.module';
 import { QueueModule } from '../queue/queue.module';
@@ -11,6 +12,7 @@ import { SessionService } from './session.service';
 @Module({
   imports: [
     AiModule,
+    ConceptRegistryModule,
     ContextModule,
     LearnerModule,
     QueueModule,

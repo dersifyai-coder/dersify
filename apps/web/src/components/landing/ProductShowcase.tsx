@@ -114,12 +114,12 @@ function CodeUI() {
         ))}
       </div>
       <div className="flex-1 bg-[#050C1B] rounded-xl border border-white/[0.05] p-4 font-mono text-[10px] leading-relaxed">
-        <div className="text-slate-600">// Dependency Injection example</div>
+        <div className="text-slate-600">{/* Dependency Injection example */}</div>
         <div><span className="text-blue-400">@Injectable</span><span className="text-slate-400">()</span></div>
         <div><span className="text-purple-400">export class</span> <span className="text-yellow-400">UserService</span> <span className="text-slate-400">{"{"}</span></div>
         <div className="ml-4"><span className="text-purple-400">constructor</span><span className="text-slate-400">(</span></div>
         <div className="ml-8"><span className="text-slate-400">private readonly </span><span className="text-cyan-400">userRepo</span><span className="text-slate-400">: </span><span className="text-yellow-400">UserRepository</span><span className="text-slate-400">,</span></div>
-        <div className="ml-4"><span className="text-slate-400">) {"{"}"</span></div>
+        <div className="ml-4"><span className="text-slate-400">{`) {"`}</span></div>
         <div className="ml-8 bg-green-500/10 border border-green-500/15 rounded px-2 -mx-2 py-0.5">
           <span className="text-green-400 text-[9px]">✓ AI: Dependency injected correctly</span>
         </div>
