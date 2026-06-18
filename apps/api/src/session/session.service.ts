@@ -20,7 +20,6 @@ import {
 } from '../context/session-insights';
 import { evaluateModeShift } from '../context/mode-shifts';
 import { LearnerService } from '../learner/learner.service';
-import { MisconceptionType } from '../learner/dto/add-misconception.dto';
 import { ConceptRegistryService } from '../concept-registry/concept-registry.service';
 import { RedisService } from '../redis/redis.service';
 import { SubscriptionService } from '../subscription/subscription.service';
@@ -381,7 +380,10 @@ export class SessionService {
         conceptId: resolvedConceptId,
         topic: context.topic,
         description: evaluation.misconceptionDetected.description,
-        misconceptionType: evaluation.misconceptionDetected.type as MisconceptionType,
+        misconceptionType: evaluation.misconceptionDetected.type,
+        severity: evaluation.misconceptionDetected.severity,
+        aiCorrection: context.aiMessage,
+        learnerStatement: context.learnerResponse,
       });
 
       updatedInsights = {

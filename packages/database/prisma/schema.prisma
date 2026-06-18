@@ -114,6 +114,7 @@ model Misconception {
   // 'causal_inversion'|'false_analogy'|'structural'
 
   remediationStrategy String? @map("remediation_strategy") // AI-generated
+  severity            String  @default("surface") @map("severity") // 'surface'|'deep'
   frequency           Int     @default(1)
   resolved            Boolean @default(false)
   resolvedInSession   String? @map("resolved_in_session") @db.Uuid // session where resolved

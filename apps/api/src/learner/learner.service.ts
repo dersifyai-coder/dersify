@@ -6,7 +6,11 @@ import {
 import { LearnerKnowledgeState, Misconception, Prisma, Profile } from '@dersify/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { FsrsCard, FsrsRating, getConfidence, schedule } from './fsrs';
-import { AddMisconceptionDto } from './dto/add-misconception.dto';
+import { MisconceptionData, MisconceptionService } from './misconception.service';
+
+export type MisconceptionWithConcept = Prisma.MisconceptionGetPayload<{
+  include: { concept: { select: { displayName: true } } };
+}>;
 
 export interface ConceptWithState {
   canonicalId: string;
@@ -74,7 +78,10 @@ export class LearnerService {
   private readonly logger = new Logger(LearnerService.name);
   private readonly cache = new Map<string, CacheEntry<unknown>>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly misconceptionService: MisconceptionService,
+  ) {}
 
   async getProfile(learnerId: string): Promise<Profile> {
     try {
@@ -223,9 +230,10 @@ export class LearnerService {
   async getActiveMisconceptions(
     learnerId: string,
     topic: string,
-  ): Promise<Misconception[]> {
+  ): Promise<MisconceptionWithConcept[]> {
     return this.prisma.misconception.findMany({
       where: { learnerId, topic, resolved: false },
+      include: { concept: { select: { displayName: true } } },
       orderBy: { frequency: 'desc' },
       take: 5,
     });
@@ -233,40 +241,10 @@ export class LearnerService {
 
   async addMisconception(
     learnerId: string,
-    dto: AddMisconceptionDto,
+    data: MisconceptionData,
   ): Promise<Misconception> {
-    // Upsert: if same conceptId + description exists, increment frequency
-    const existing = await this.prisma.misconception.findFirst({
-      where: {
-        learnerId,
-        conceptId: dto.conceptId,
-        description: dto.description,
-        resolved: false,
-      },
-    });
-
-    let result: Misconception;
-    if (existing) {
-      result = await this.prisma.misconception.update({
-        where: { id: existing.id },
-        data: { frequency: { increment: 1 } },
-      });
-    } else {
-      result = await this.prisma.misconception.create({
-        data: {
-          learnerId,
-          conceptId: dto.conceptId,
-          topic: dto.topic,
-          description: dto.description,
-          misconceptionType: dto.misconceptionType,
-          remediationStrategy: dto.remediationStrategy,
-          frequency: 1,
-          resolved: false,
-        },
-      });
-    }
-
-    this.invalidateCache(layer1Key(learnerId, dto.topic));
+    const result = await this.misconceptionService.addOrUpdateMisconception(learnerId, data);
+    this.invalidateCache(layer1Key(learnerId, data.topic));
     return result;
   }
 

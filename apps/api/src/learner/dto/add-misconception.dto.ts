@@ -10,6 +10,11 @@ export enum MisconceptionType {
   Structural = 'structural',
 }
 
+export enum MisconceptionSeverity {
+  Surface = 'surface',
+  Deep = 'deep',
+}
+
 export class AddMisconceptionDto {
   @ApiProperty()
   @IsString()
@@ -30,8 +35,18 @@ export class AddMisconceptionDto {
   @IsEnum(MisconceptionType)
   misconceptionType!: MisconceptionType;
 
+  @ApiProperty({ enum: MisconceptionSeverity, required: false })
+  @IsOptional()
+  @IsEnum(MisconceptionSeverity)
+  severity?: MisconceptionSeverity;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  remediationStrategy?: string;
+  learnerStatement?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  aiCorrection?: string;
 }

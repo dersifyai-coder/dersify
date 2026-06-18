@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { LearnerService } from './learner.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { AddMisconceptionDto, MisconceptionType } from './dto/add-misconception.dto';
+import { MisconceptionService, MisconceptionData } from './misconception.service';
 
 function makeStateRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -40,6 +40,7 @@ function makeMisconceptionRow(overrides: Record<string, unknown> = {}) {
     topic: 'math',
     description: 'Confused about negative sign',
     misconceptionType: 'terminology',
+    severity: 'surface',
     remediationStrategy: null,
     frequency: 1,
     resolved: false,
@@ -57,6 +58,7 @@ describe('LearnerService', () => {
     misconception: jest.Mocked<Record<string, jest.Mock>>;
     profile: jest.Mocked<Record<string, jest.Mock>>;
   };
+  let misconceptionService: { addOrUpdateMisconception: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -66,9 +68,7 @@ describe('LearnerService', () => {
         findMany: jest.fn(),
       },
       misconception: {
-        findFirst: jest.fn(),
         findMany: jest.fn(),
-        create: jest.fn(),
         update: jest.fn(),
       },
       profile: {
@@ -76,10 +76,13 @@ describe('LearnerService', () => {
       },
     };
 
+    misconceptionService = { addOrUpdateMisconception: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LearnerService,
         { provide: PrismaService, useValue: prisma },
+        { provide: MisconceptionService, useValue: misconceptionService },
       ],
     }).compile();
 
@@ -140,37 +143,36 @@ describe('LearnerService', () => {
   });
 
   describe('addMisconception', () => {
-    const dto: AddMisconceptionDto = {
+    const data: MisconceptionData = {
       conceptId: 'math.algebra.linear-equations-abc',
       topic: 'math',
       description: 'Confused about negative sign',
-      misconceptionType: MisconceptionType.Terminology,
+      misconceptionType: 'terminology',
     };
 
-    it('increments frequency on duplicate', async () => {
-      const existing = makeMisconceptionRow({ frequency: 2 });
-      prisma.misconception.findFirst.mockResolvedValue(existing);
-      const updated = { ...existing, frequency: 3 };
-      prisma.misconception.update.mockResolvedValue(updated);
+    it('delegates to MisconceptionService.addOrUpdateMisconception', async () => {
+      const row = makeMisconceptionRow();
+      misconceptionService.addOrUpdateMisconception.mockResolvedValue(row);
 
-      const result = await service.addMisconception('learner-uuid', dto);
+      const result = await service.addMisconception('learner-uuid', data);
 
-      expect(prisma.misconception.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: { frequency: { increment: 1 } },
-        }),
+      expect(misconceptionService.addOrUpdateMisconception).toHaveBeenCalledWith(
+        'learner-uuid',
+        data,
       );
-      expect(result.frequency).toBe(3);
+      expect(result.id).toBe('misconception-uuid');
     });
 
-    it('creates new misconception when no duplicate exists', async () => {
-      prisma.misconception.findFirst.mockResolvedValue(null);
-      const created = makeMisconceptionRow();
-      prisma.misconception.create.mockResolvedValue(created);
+    it('invalidates the Layer 1 cache for the topic after adding', async () => {
+      const row = makeMisconceptionRow();
+      misconceptionService.addOrUpdateMisconception.mockResolvedValue(row);
 
-      await service.addMisconception('learner-uuid', dto);
+      await service.addMisconception('learner-uuid', data);
 
-      expect(prisma.misconception.create).toHaveBeenCalledTimes(1);
+      // Verify cache is cleared: a subsequent getActiveMisconceptions call should hit the DB
+      prisma.misconception.findMany.mockResolvedValue([row]);
+      await service.getActiveMisconceptions('learner-uuid', 'math');
+      expect(prisma.misconception.findMany).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -88,10 +88,16 @@ export class ContextService {
       misconceptions.length > 0
         ? misconceptions
             .slice(0, 5)
-            .map(
-              (m) =>
-                `• ${m.conceptId}: ${m.description} (Type: ${m.misconceptionType})${m.remediationStrategy ? ` — ${m.remediationStrategy}` : ''}`,
-            )
+            .map((m) => {
+              const lines = [
+                `• ${m.concept.displayName}: ${m.description}`,
+                `  Type: ${m.misconceptionType} | Severity: ${m.severity}`,
+              ];
+              if (m.remediationStrategy) {
+                lines.push(`  Remediation: ${m.remediationStrategy}`);
+              }
+              return lines.join('\n');
+            })
             .join('\n')
         : 'No active misconceptions on this topic.';
 
@@ -156,6 +162,13 @@ export class ContextService {
       `- Respond in the learner's language if they write in a language other than English.`,
       `- Never use the word "Dersify" more than once per session.`,
       `- Never mention modes, calibration scores, or internal system state to the learner.`,
+      ``,
+      `MISCONCEPTION HANDLING:`,
+      `When you detect that a misconception listed above is surfacing again in the learner's response:`,
+      `- Do NOT simply re-explain the correct concept.`,
+      `- Use the remediation strategy listed above for that specific misconception.`,
+      `- After addressing it, ask a follow-up to confirm the misconception has been resolved.`,
+      `- If resolved: it will be marked resolved in the next session update.`,
     ].join('\n');
   }
 
