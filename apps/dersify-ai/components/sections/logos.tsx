@@ -1,21 +1,22 @@
 const LOGOS = [
-  'MIT',
-  'Stanford',
-  'Harvard',
-  'Google for Education',
-  'ALU',
-  'Andela',
-  'Morehouse',
-  'Strathmore',
-  'African Union',
-  'freeCodeCamp',
-  'Udacity',
+  'MIT', 'Stanford', 'Harvard', 'Google for Education',
+  'ALU', 'Andela', 'Morehouse', 'Strathmore',
+  'African Union', 'freeCodeCamp', 'Udacity',
 ];
 
 export function Logos() {
   return (
-    <section className="border-y border-white/[0.06] bg-white/[0.02] py-8">
-      <p className="text-center text-[13px] uppercase tracking-[0.08em] text-[#4B5563]">
+    <section
+      className="border-y py-8"
+      style={{
+        background: 'var(--bg-subtle)',
+        borderColor: 'var(--border-subtle)',
+      }}
+    >
+      <p
+        className="text-center text-[12.5px] font-semibold uppercase tracking-[0.08em]"
+        style={{ color: 'var(--text-muted)' }}
+      >
         Trusted by learners at
       </p>
       <div className="pointer-events-none mt-6 overflow-hidden">
@@ -25,7 +26,8 @@ export function Logos() {
               {LOGOS.map((logo) => (
                 <span
                   key={`${copy}-${logo}`}
-                  className="mr-16 whitespace-nowrap text-[15px] font-semibold text-[#374151] transition-colors duration-200 hover:text-[#9CA3AF]"
+                  className="mr-16 whitespace-nowrap text-[15px] font-semibold"
+                  style={{ color: 'var(--text-muted)' }}
                 >
                   {logo}
                 </span>

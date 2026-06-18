@@ -3,7 +3,7 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
-type Variant = 'gradient' | 'outline' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'ghost';
 type Size = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -11,30 +11,40 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size;
 }
 
-const variantClasses: Record<Variant, string> = {
-  gradient:
-    'gradient-bg text-white font-semibold shadow-[0_0_20px_rgba(27,79,219,0.4)] hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(27,79,219,0.55)]',
-  outline:
-    'border border-white/15 text-white hover:border-white/30 hover:bg-white/[0.04]',
-  ghost: 'text-[#9CA3AF] hover:text-white',
+const variantStyles: Record<Variant, React.CSSProperties> = {
+  primary: {
+    background: 'var(--accent)',
+    color: 'var(--accent-contrast)',
+    border: 'none',
+  },
+  secondary: {
+    background: 'var(--bg-surface)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-strong)',
+  },
+  ghost: {
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    border: 'none',
+  },
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: 'px-5 py-2.5 text-sm',
-  md: 'px-7 py-3.5 text-base',
-  lg: 'px-7 h-[52px] text-base',
+  sm: 'px-4 py-2 text-sm',
+  md: 'px-6 py-2.5 text-[15px]',
+  lg: 'px-7 py-3.5 text-base',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'gradient', size = 'md', className, ...props }, ref) => (
+  ({ variant = 'primary', size = 'md', className, style, ...props }, ref) => (
     <button
       ref={ref}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-[10px] font-sora transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-70',
-        variantClasses[variant],
+        'inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-opacity duration-150 disabled:cursor-not-allowed disabled:opacity-50 hover:opacity-90',
         sizeClasses[size],
         className,
       )}
+      style={{ ...variantStyles[variant], ...style }}
       {...props}
     />
   ),

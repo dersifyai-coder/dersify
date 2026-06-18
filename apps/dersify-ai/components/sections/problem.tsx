@@ -24,66 +24,92 @@ const DERSIFY = [
 
 export function Problem() {
   return (
-    <section id="problem" className="bg-navy py-16 lg:py-24">
+    <section id="problem" className="py-16 lg:py-24" style={{ background: 'var(--bg-base)' }}>
       <div className="mx-auto max-w-[1200px] px-6 lg:px-12">
-        <p className="text-center text-[13px] font-medium uppercase tracking-[0.1em] text-teal">
-          The Problem
+        <p
+          className="text-center text-[12.5px] font-semibold uppercase tracking-[0.08em]"
+          style={{ color: 'var(--accent)' }}
+        >
+          The problem
         </p>
 
         <motion.h2
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.5, ease: EASE }}
-          className="mx-auto mt-4 max-w-[700px] text-center text-[32px] font-bold leading-[1.15] tracking-[-0.02em] text-white lg:text-5xl"
+          className="mx-auto mt-4 max-w-[700px] text-center"
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(1.75rem, 3.5vw, 2.75rem)',
+            fontWeight: 500,
+            letterSpacing: '-0.025em',
+            lineHeight: 1.15,
+            color: 'var(--text-primary)',
+          }}
         >
           Traditional AI tutors reset to zero the moment you close the tab.
         </motion.h2>
 
-        <p className="mx-auto mt-5 max-w-[560px] text-center text-lg leading-[1.7] text-[#9CA3AF]">
+        <p
+          className="mx-auto mt-5 max-w-[560px] text-center text-lg leading-relaxed"
+          style={{ color: 'var(--text-secondary)' }}
+        >
           You re-explain yourself every session. Your progress is invisible. The AI has
           no idea what you struggled with last week.
         </p>
 
-        <div className="mt-16 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Every other tool */}
+        <div className="mt-14 grid grid-cols-1 gap-5 lg:grid-cols-2">
           <motion.div
-            initial={{ opacity: 0, x: -32 }}
+            initial={{ opacity: 0, x: -24 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-80px' }}
             transition={{ duration: 0.5, ease: EASE }}
-            className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-8"
+            className="rounded-lg p-8"
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-default)',
+              boxShadow: 'var(--shadow-sm)',
+            }}
           >
             <div className="flex items-center gap-3">
-              <span className="h-2 w-2 rounded-full bg-[#4B5563]" />
-              <h3 className="text-lg font-semibold text-white">Every other tool</h3>
+              <span className="h-2 w-2 rounded-full" style={{ background: 'var(--text-muted)' }} />
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                Every other tool
+              </h3>
             </div>
             <ul className="mt-6 space-y-4">
               {OTHER_TOOLS.map((item) => (
-                <li key={item} className="flex items-start gap-3 text-base text-[#9CA3AF]">
-                  <X size={18} className="mt-0.5 shrink-0 text-[#4B5563]" />
+                <li key={item} className="flex items-start gap-3 text-[15px]" style={{ color: 'var(--text-secondary)' }}>
+                  <X size={17} className="mt-0.5 shrink-0" style={{ color: 'var(--text-disabled)' }} />
                   {item}
                 </li>
               ))}
             </ul>
           </motion.div>
 
-          {/* Dersify */}
           <motion.div
-            initial={{ opacity: 0, x: 32 }}
+            initial={{ opacity: 0, x: 24 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-80px' }}
             transition={{ duration: 0.5, ease: EASE }}
-            className="rounded-2xl border border-blue/25 bg-blue/[0.06] p-8 shadow-[0_0_60px_rgba(27,79,219,0.1)]"
+            className="rounded-lg p-8"
+            style={{
+              background: 'linear-gradient(180deg, var(--accent-soft), transparent), var(--bg-surface)',
+              border: '1px solid var(--accent-soft-border)',
+              boxShadow: 'var(--glow-accent)',
+            }}
           >
             <div className="flex items-center gap-3">
-              <span className="gradient-bg h-2 w-2 rounded-full" />
-              <h3 className="text-lg font-semibold text-white">Dersify</h3>
+              <span className="h-2 w-2 rounded-full" style={{ background: 'var(--accent)' }} />
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                Dersify
+              </h3>
             </div>
             <ul className="mt-6 space-y-4">
               {DERSIFY.map((item) => (
-                <li key={item} className="flex items-start gap-3 text-base text-white">
-                  <Check size={18} className="mt-0.5 shrink-0 text-teal" />
+                <li key={item} className="flex items-start gap-3 text-[15px]" style={{ color: 'var(--text-primary)' }}>
+                  <Check size={17} className="mt-0.5 shrink-0" style={{ color: 'var(--accent)' }} />
                   {item}
                 </li>
               ))}
