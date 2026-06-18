@@ -5,10 +5,10 @@ import ReactMarkdown from 'react-markdown';
 import type { DisplayMessage } from '@/types';
 
 interface Props {
-  messages: DisplayMessage[];
-  isStreaming: boolean;
+  messages:       DisplayMessage[];
+  isStreaming:    boolean;
   streamingContent: string;
-  currentPhase: string;
+  currentPhase:   string;
   previousPhase?: string;
 }
 
@@ -32,14 +32,14 @@ export default function ConversationThread({
     <div className="flex flex-col gap-4 px-4 py-4">
       {messages.map((msg, i) => (
         <div key={i}>
-          {/* Phase transition separator before the first consolidation message */}
+          {/* Phase transition separator */}
           {phaseJustChanged && i === messages.length - 1 && msg.role === 'assistant' && (
             <div className="my-4 flex items-center gap-3">
-              <div className="h-px flex-1" style={{ backgroundColor: 'var(--border)' }} />
+              <div className="h-px flex-1" style={{ backgroundColor: 'var(--border-default)' }} />
               <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
                 Moving to practice section
               </span>
-              <div className="h-px flex-1" style={{ backgroundColor: 'var(--border)' }} />
+              <div className="h-px flex-1" style={{ backgroundColor: 'var(--border-default)' }} />
             </div>
           )}
 
@@ -51,8 +51,8 @@ export default function ConversationThread({
               className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
               style={
                 msg.role === 'assistant'
-                  ? { background: 'linear-gradient(135deg, var(--primary), var(--teal))', color: '#fff' }
-                  : { backgroundColor: 'var(--bg-surface-2)', color: 'var(--text-subtle)' }
+                  ? { background: 'var(--accent)', color: 'var(--accent-contrast)' }
+                  : { background: 'var(--bg-subtle)', color: 'var(--text-secondary)' }
               }
             >
               {msg.role === 'assistant' ? 'D' : 'Y'}
@@ -65,19 +65,19 @@ export default function ConversationThread({
                 msg.role === 'assistant'
                   ? {
                       backgroundColor: 'var(--bg-surface)',
+                      border: '1px solid var(--border-default)',
                       color: 'var(--text-primary)',
                       borderBottomLeftRadius: '4px',
-                      fontFamily: 'var(--font-sora), sans-serif',
                     }
                   : {
-                      background: 'linear-gradient(135deg, var(--primary), var(--teal))',
-                      color: '#fff',
+                      background: 'var(--accent)',
+                      color: 'var(--accent-contrast)',
                       borderBottomRightRadius: '4px',
                     }
               }
             >
               {msg.role === 'assistant' ? (
-                <div className="prose prose-invert prose-sm max-w-none">
+                <div className="prose prose-sm max-w-none">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               ) : (
@@ -93,7 +93,7 @@ export default function ConversationThread({
         <div className="flex items-start gap-3">
           <div
             className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-            style={{ background: 'linear-gradient(135deg, var(--primary), var(--teal))', color: '#fff' }}
+            style={{ background: 'var(--accent)', color: 'var(--accent-contrast)' }}
           >
             D
           </div>
@@ -101,18 +101,19 @@ export default function ConversationThread({
             className="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
             style={{
               backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-default)',
               color: 'var(--text-primary)',
               borderBottomLeftRadius: '4px',
             }}
           >
             {streamingContent ? (
-              <div className="prose prose-invert prose-sm max-w-none">
+              <div className="prose prose-sm max-w-none">
                 <ReactMarkdown>{streamingContent}</ReactMarkdown>
               </div>
             ) : null}
             <span
               className="inline-block h-4 w-0.5 animate-pulse"
-              style={{ backgroundColor: 'var(--teal)', verticalAlign: 'middle' }}
+              style={{ backgroundColor: 'var(--accent)', verticalAlign: 'middle' }}
             />
           </div>
         </div>

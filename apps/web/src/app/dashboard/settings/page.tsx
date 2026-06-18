@@ -2,18 +2,19 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { Lock } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
 interface LearnerSource {
-  id: string;
-  topic: string;
-  sourceType: 'pdf' | 'url' | 'youtube';
-  title: string;
-  status: 'processing' | 'ready' | 'failed';
-  chunkCount: number;
+  id:            string;
+  topic:         string;
+  sourceType:    'pdf' | 'url' | 'youtube';
+  title:         string;
+  status:        'processing' | 'ready' | 'failed';
+  chunkCount:    number;
   errorMessage?: string | null;
-  createdAt: string;
+  createdAt:     string;
 }
 
 function buildApiUrl(path: string): string {
@@ -41,35 +42,52 @@ async function apiBrowserFetch<T>(
 }
 
 const SOURCE_TYPE_LABEL: Record<LearnerSource['sourceType'], string> = {
-  pdf: 'PDF',
-  url: 'URL',
+  pdf:     'PDF',
+  url:     'URL',
   youtube: 'YouTube',
 };
 
-const STATUS_STYLE: Record<LearnerSource['status'], string> = {
-  processing: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  ready: 'bg-teal-500/10 text-teal-400 border-teal-500/20',
-  failed: 'bg-red-500/10 text-red-400 border-red-500/20',
+const STATUS_COLORS: Record<LearnerSource['status'], { bg: string; text: string; border: string }> = {
+  processing: { bg: 'rgba(234,179,8,0.08)',  text: 'var(--warning)',  border: 'rgba(234,179,8,0.25)' },
+  ready:      { bg: 'var(--accent-soft)',     text: 'var(--accent)',   border: 'var(--accent-soft-border)' },
+  failed:     { bg: 'rgba(239,68,68,0.08)',   text: 'var(--error)',    border: 'rgba(239,68,68,0.2)'  },
 };
 
 type ModalTab = 'pdf' | 'url' | 'youtube';
 
-export default function SettingsPage() {
-  const [token, setToken] = useState<string | null>(null);
-  const [sources, setSources] = useState<LearnerSource[]>([]);
-  const [loadingError, setLoadingError] = useState<string | null>(null);
-  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
+const inputClass =
+  'w-full rounded-lg px-3 py-2 text-sm outline-none transition-all';
+const inputStyle = {
+  border: '1px solid var(--border-default)',
+  backgroundColor: 'var(--bg-base)',
+  color: 'var(--text-primary)',
+};
 
-  const [showModal, setShowModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<ModalTab>('pdf');
-  const [formTopic, setFormTopic] = useState('');
-  const [formTitle, setFormTitle] = useState('');
-  const [formUrl, setFormUrl] = useState('');
-  const [formYouTubeId, setFormYouTubeId] = useState('');
-  const [formFile, setFormFile] = useState<File | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+function handleFocus(e: React.FocusEvent<HTMLInputElement>) {
+  e.currentTarget.style.borderColor = 'var(--border-focus)';
+  e.currentTarget.style.boxShadow   = 'var(--focus-ring)';
+}
+function handleBlur(e: React.FocusEvent<HTMLInputElement>) {
+  e.currentTarget.style.borderColor = 'var(--border-default)';
+  e.currentTarget.style.boxShadow   = 'none';
+}
+
+export default function SettingsPage() {
+  const [token, setToken]                         = useState<string | null>(null);
+  const [sources, setSources]                     = useState<LearnerSource[]>([]);
+  const [loadingError, setLoadingError]           = useState<string | null>(null);
+  const [expandedTopics, setExpandedTopics]       = useState<Set<string>>(new Set());
+
+  const [showModal, setShowModal]                 = useState(false);
+  const [activeTab, setActiveTab]                 = useState<ModalTab>('pdf');
+  const [formTopic, setFormTopic]                 = useState('');
+  const [formTitle, setFormTitle]                 = useState('');
+  const [formUrl, setFormUrl]                     = useState('');
+  const [formYouTubeId, setFormYouTubeId]         = useState('');
+  const [formFile, setFormFile]                   = useState<File | null>(null);
+  const [submitting, setSubmitting]               = useState(false);
+  const [formError, setFormError]                 = useState<string | null>(null);
+  const [deletingId, setDeletingId]               = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -83,8 +101,7 @@ export default function SettingsPage() {
     try {
       const data = await apiBrowserFetch<LearnerSource[]>('/sources', token);
       setSources(data);
-      const allTopics = new Set(data.map((s) => s.topic));
-      setExpandedTopics(allTopics);
+      setExpandedTopics(new Set(data.map((s) => s.topic)));
       setLoadingError(null);
     } catch (err) {
       setLoadingError((err as Error).message);
@@ -124,10 +141,8 @@ export default function SettingsPage() {
       setFormError('Topic and title are required');
       return;
     }
-
     setSubmitting(true);
     setFormError(null);
-
     try {
       if (activeTab === 'pdf') {
         if (!formFile) { setFormError('Select a PDF file'); return; }
@@ -151,7 +166,6 @@ export default function SettingsPage() {
           body: JSON.stringify({ topic: formTopic.trim(), title: formTitle.trim(), youtubeId: formYouTubeId.trim() }),
         });
       }
-
       setShowModal(false);
       resetModal();
       await fetchSources();
@@ -170,63 +184,96 @@ export default function SettingsPage() {
   const toggleTopic = (topic: string) => {
     setExpandedTopics((prev) => {
       const next = new Set(prev);
-      if (next.has(topic)) next.delete(topic);
-      else next.add(topic);
+      if (next.has(topic)) next.delete(topic); else next.add(topic);
       return next;
     });
   };
 
   return (
-    <div className="min-h-screen px-6 py-10" style={{ backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)' }}>
+    <div
+      className="min-h-screen px-6 py-10"
+      style={{ backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)' }}
+    >
       <div className="mx-auto max-w-3xl">
         <div className="mb-8">
-          <p className="text-sm font-semibold" style={{ color: 'var(--teal)' }}>Settings</p>
-          <h1 className="mt-1 font-sora text-2xl font-bold">Account &amp; Sources</h1>
+          <p
+            className="text-[12px] font-semibold uppercase tracking-widest"
+            style={{ color: 'var(--accent)' }}
+          >
+            Settings
+          </p>
+          <h1
+            className="mt-2 text-2xl font-semibold"
+            style={{
+              fontFamily: 'var(--font-display)',
+              letterSpacing: '-0.02em',
+              color: 'var(--text-primary)',
+            }}
+          >
+            Account &amp; sources
+          </h1>
         </div>
 
-        {/* Your Sources section */}
+        {/* Sources section */}
         <section
-          className="rounded-xl border p-6"
-          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-surface)' }}
+          className="rounded-xl p-6"
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            boxShadow: 'var(--shadow-sm)',
+          }}
         >
-          <div className="mb-5 flex items-center justify-between">
+          <div className="mb-5 flex items-center justify-between gap-4">
             <div>
-              <h2 className="font-sora text-lg font-semibold">Your Sources</h2>
-              <p className="mt-0.5 text-sm" style={{ color: 'var(--text-muted)' }}>
+              <h2
+                className="text-lg font-semibold"
+                style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+              >
+                Your sources
+              </h2>
+              <p className="mt-0.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
                 Attach PDFs, URLs, or YouTube videos to a topic. Dersify injects relevant excerpts into your sessions.
               </p>
             </div>
             <button
               onClick={() => { resetModal(); setShowModal(true); }}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg, var(--primary), var(--teal))' }}
+              className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90"
+              style={{ background: 'var(--accent)', color: 'var(--accent-contrast)' }}
             >
-              + Add Source
+              Add source
             </button>
           </div>
 
-          {/* Pro tier notice (placeholder until P-11) */}
+          {/* Pro tier notice */}
           <div
-            className="mb-5 flex items-center gap-3 rounded-lg border px-4 py-3 text-sm"
-            style={{ borderColor: 'var(--border-accent)', backgroundColor: 'var(--bg-surface-2)' }}
+            className="mb-5 flex items-center gap-3 rounded-lg px-4 py-3 text-sm"
+            style={{
+              background: 'var(--accent-soft)',
+              border: '1px solid var(--accent-soft-border)',
+            }}
           >
-            <span>🔒</span>
-            <span style={{ color: 'var(--text-subtle)' }}>
-              Your Sources is a <strong style={{ color: 'var(--text-primary)' }}>Pro</strong> feature.
-              Upgrade at $12/mo to unlock unlimited sources.
+            <Lock size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+            <span style={{ color: 'var(--text-secondary)' }}>
+              Your sources is a{' '}
+              <strong style={{ color: 'var(--text-primary)' }}>Pro</strong>{' '}
+              feature. Upgrade at $12/mo to unlock unlimited sources.
             </span>
           </div>
 
           {loadingError && (
-            <p className="mb-4 text-sm text-red-400">{loadingError}</p>
+            <p className="mb-4 text-sm" style={{ color: 'var(--error)' }}>
+              {loadingError}
+            </p>
           )}
 
           {token === null ? (
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading…</p>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Loading...
+            </p>
           ) : sources.length === 0 ? (
             <div
               className="rounded-lg border border-dashed py-10 text-center"
-              style={{ borderColor: 'var(--border)' }}
+              style={{ borderColor: 'var(--border-strong)' }}
             >
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 No sources yet. Add a PDF, URL, or YouTube video to get started.
@@ -237,14 +284,19 @@ export default function SettingsPage() {
               {Object.entries(byTopic).map(([topic, topicSources]) => (
                 <div
                   key={topic}
-                  className="rounded-lg border"
-                  style={{ borderColor: 'var(--border)' }}
+                  className="rounded-lg"
+                  style={{ border: '1px solid var(--border-default)' }}
                 >
                   <button
                     onClick={() => toggleTopic(topic)}
                     className="flex w-full items-center justify-between px-4 py-3 text-left"
                   >
-                    <span className="font-medium text-sm capitalize">{topic}</span>
+                    <span
+                      className="font-medium text-sm capitalize"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      {topic}
+                    </span>
                     <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                       {topicSources.length} source{topicSources.length !== 1 ? 's' : ''}{' '}
                       {expandedTopics.has(topic) ? '▲' : '▼'}
@@ -254,43 +306,72 @@ export default function SettingsPage() {
                   {expandedTopics.has(topic) && (
                     <ul
                       className="divide-y"
-                      style={{ borderColor: 'var(--border)' }}
+                      style={{ borderTopColor: 'var(--border-default)' }}
                     >
-                      {topicSources.map((src) => (
-                        <li key={src.id} className="flex items-center justify-between px-4 py-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">{src.title}</p>
-                            <div className="mt-1 flex items-center gap-2">
-                              <span
-                                className="rounded-full border px-2 py-0.5 text-xs"
-                                style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+                      {topicSources.map((src) => {
+                        const statusColor = STATUS_COLORS[src.status];
+                        return (
+                          <li
+                            key={src.id}
+                            className="flex items-center justify-between px-4 py-3"
+                            style={{ borderColor: 'var(--border-default)' }}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className="truncate text-sm font-medium"
+                                style={{ color: 'var(--text-primary)' }}
                               >
-                                {SOURCE_TYPE_LABEL[src.sourceType]}
-                              </span>
-                              <span
-                                className={`rounded-full border px-2 py-0.5 text-xs capitalize ${STATUS_STYLE[src.status]}`}
-                              >
-                                {src.status}
-                              </span>
-                              {src.status === 'ready' && (
-                                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                  {src.chunkCount} chunks
+                                {src.title}
+                              </p>
+                              <div className="mt-1 flex items-center gap-2">
+                                <span
+                                  className="rounded-full px-2 py-0.5 text-xs"
+                                  style={{
+                                    border: '1px solid var(--border-default)',
+                                    color: 'var(--text-muted)',
+                                  }}
+                                >
+                                  {SOURCE_TYPE_LABEL[src.sourceType]}
                                 </span>
+                                <span
+                                  className="rounded-full px-2 py-0.5 text-xs capitalize"
+                                  style={{
+                                    background: statusColor.bg,
+                                    color: statusColor.text,
+                                    border: `1px solid ${statusColor.border}`,
+                                  }}
+                                >
+                                  {src.status}
+                                </span>
+                                {src.status === 'ready' && (
+                                  <span
+                                    className="text-xs"
+                                    style={{ color: 'var(--text-muted)' }}
+                                  >
+                                    {src.chunkCount} chunks
+                                  </span>
+                                )}
+                              </div>
+                              {src.status === 'failed' && src.errorMessage && (
+                                <p
+                                  className="mt-1 truncate text-xs"
+                                  style={{ color: 'var(--error)' }}
+                                >
+                                  {src.errorMessage}
+                                </p>
                               )}
                             </div>
-                            {src.status === 'failed' && src.errorMessage && (
-                              <p className="mt-1 truncate text-xs text-red-400">{src.errorMessage}</p>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => void handleDelete(src.id)}
-                            disabled={deletingId === src.id}
-                            className="ml-4 rounded px-2 py-1 text-xs text-red-400 hover:bg-red-500/10 disabled:opacity-40"
-                          >
-                            {deletingId === src.id ? '…' : 'Delete'}
-                          </button>
-                        </li>
-                      ))}
+                            <button
+                              onClick={() => void handleDelete(src.id)}
+                              disabled={deletingId === src.id}
+                              className="ml-4 rounded px-2 py-1 text-xs transition-opacity hover:opacity-80 disabled:opacity-40"
+                              style={{ color: 'var(--error)' }}
+                            >
+                              {deletingId === src.id ? '...' : 'Delete'}
+                            </button>
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </div>
@@ -300,39 +381,50 @@ export default function SettingsPage() {
         </section>
       </div>
 
-      {/* Upload Modal */}
+      {/* Upload modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div
-            className="w-full max-w-md rounded-xl border p-6 shadow-xl"
-            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-surface)' }}
+            className="w-full max-w-md rounded-xl p-6"
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-default)',
+              boxShadow: 'var(--shadow-xl)',
+            }}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-sora font-semibold">Add Source</h3>
+              <h3
+                className="font-semibold"
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                Add source
+              </h3>
               <button
                 onClick={() => { setShowModal(false); resetModal(); }}
-                className="text-sm"
+                className="text-sm transition-opacity hover:opacity-80"
                 style={{ color: 'var(--text-muted)' }}
+                aria-label="Close"
               >
-                ✕
+                x
               </button>
             </div>
 
             {/* Tabs */}
             <div
               className="mb-5 flex rounded-lg p-1"
-              style={{ backgroundColor: 'var(--bg-surface-2)' }}
+              style={{ backgroundColor: 'var(--bg-subtle)' }}
             >
               {(['pdf', 'url', 'youtube'] as ModalTab[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-colors ${
-                    activeTab === tab ? 'text-white shadow' : ''
-                  }`}
+                  className="flex-1 rounded-md py-1.5 text-sm font-medium transition-all"
                   style={
                     activeTab === tab
-                      ? { background: 'linear-gradient(135deg, var(--primary), var(--teal))' }
+                      ? { background: 'var(--accent)', color: 'var(--accent-contrast)' }
                       : { color: 'var(--text-muted)' }
                   }
                 >
@@ -342,9 +434,11 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-3">
-              {/* Common fields */}
               <div>
-                <label className="mb-1 block text-xs font-medium" style={{ color: 'var(--text-subtle)' }}>
+                <label
+                  className="mb-1 block text-xs font-medium"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   Topic
                 </label>
                 <input
@@ -352,16 +446,17 @@ export default function SettingsPage() {
                   value={formTopic}
                   onChange={(e) => setFormTopic(e.target.value)}
                   placeholder="e.g. machine-learning"
-                  className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1"
-                  style={{
-                    borderColor: 'var(--border)',
-                    backgroundColor: 'var(--bg-surface-2)',
-                    color: 'var(--text-primary)',
-                  }}
+                  className={inputClass}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium" style={{ color: 'var(--text-subtle)' }}>
+                <label
+                  className="mb-1 block text-xs font-medium"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   Title
                 </label>
                 <input
@@ -369,20 +464,20 @@ export default function SettingsPage() {
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
                   placeholder="Descriptive name for this source"
-                  className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1"
-                  style={{
-                    borderColor: 'var(--border)',
-                    backgroundColor: 'var(--bg-surface-2)',
-                    color: 'var(--text-primary)',
-                  }}
+                  className={inputClass}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
                 />
               </div>
 
-              {/* Tab-specific fields */}
               {activeTab === 'pdf' && (
                 <div>
-                  <label className="mb-1 block text-xs font-medium" style={{ color: 'var(--text-subtle)' }}>
-                    PDF File (max 10 MB)
+                  <label
+                    className="mb-1 block text-xs font-medium"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    PDF file (max 10 MB)
                   </label>
                   <input
                     type="file"
@@ -401,7 +496,10 @@ export default function SettingsPage() {
 
               {activeTab === 'url' && (
                 <div>
-                  <label className="mb-1 block text-xs font-medium" style={{ color: 'var(--text-subtle)' }}>
+                  <label
+                    className="mb-1 block text-xs font-medium"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
                     URL
                   </label>
                   <input
@@ -409,20 +507,21 @@ export default function SettingsPage() {
                     value={formUrl}
                     onChange={(e) => setFormUrl(e.target.value)}
                     placeholder="https://example.com/article"
-                    className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1"
-                    style={{
-                      borderColor: 'var(--border)',
-                      backgroundColor: 'var(--bg-surface-2)',
-                      color: 'var(--text-primary)',
-                    }}
+                    className={inputClass}
+                    style={inputStyle}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
                   />
                 </div>
               )}
 
               {activeTab === 'youtube' && (
                 <div>
-                  <label className="mb-1 block text-xs font-medium" style={{ color: 'var(--text-subtle)' }}>
-                    YouTube Video ID
+                  <label
+                    className="mb-1 block text-xs font-medium"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    YouTube video ID
                   </label>
                   <input
                     type="text"
@@ -430,36 +529,36 @@ export default function SettingsPage() {
                     onChange={(e) => setFormYouTubeId(e.target.value)}
                     placeholder="dQw4w9WgXcQ  (11-character ID from the URL)"
                     maxLength={11}
-                    className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1 font-mono"
-                    style={{
-                      borderColor: 'var(--border)',
-                      backgroundColor: 'var(--bg-surface-2)',
-                      color: 'var(--text-primary)',
-                    }}
+                    className={`${inputClass} font-mono`}
+                    style={inputStyle}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
                   />
                 </div>
               )}
             </div>
 
             {formError && (
-              <p className="mt-3 text-sm text-red-400">{formError}</p>
+              <p className="mt-3 text-sm" style={{ color: 'var(--error)' }}>
+                {formError}
+              </p>
             )}
 
             <div className="mt-5 flex justify-end gap-3">
               <button
                 onClick={() => { setShowModal(false); resetModal(); }}
-                className="rounded-lg px-4 py-2 text-sm"
-                style={{ color: 'var(--text-muted)' }}
+                className="rounded-lg px-4 py-2 text-sm transition-opacity hover:opacity-80"
+                style={{ color: 'var(--text-secondary)' }}
               >
                 Cancel
               </button>
               <button
                 onClick={() => void handleSubmit()}
                 disabled={submitting}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, var(--primary), var(--teal))' }}
+                className="rounded-lg px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+                style={{ background: 'var(--accent)', color: 'var(--accent-contrast)' }}
               >
-                {submitting ? 'Adding…' : 'Add Source'}
+                {submitting ? 'Adding...' : 'Add source'}
               </button>
             </div>
           </div>

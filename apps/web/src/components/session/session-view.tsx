@@ -7,7 +7,7 @@ import ConversationThread from './conversation-thread';
 import MessageInput from './message-input';
 
 interface Props {
-  session: ActiveSession;
+  session:          ActiveSession;
   initialMessages?: SessionMessage[];
 }
 
@@ -40,15 +40,15 @@ function toDisplayMessage(m: SessionMessage): DisplayMessage {
 }
 
 export default function SessionView({ session: initialSession, initialMessages = [] }: Props) {
-  const [token, setToken] = useState<string | null>(null);
-  const [messages, setMessages] = useState<DisplayMessage[]>(
+  const [token, setToken]               = useState<string | null>(null);
+  const [messages, setMessages]         = useState<DisplayMessage[]>(
     initialMessages.map(toDisplayMessage),
   );
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [isStreaming, setIsStreaming]   = useState(false);
   const [currentPhase, setCurrentPhase] = useState(initialSession.currentPhase);
   const [previousPhase, setPreviousPhase] = useState<string | undefined>(undefined);
-  const [ended, setEnded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [ended, setEnded]               = useState(false);
+  const [error, setError]               = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -62,9 +62,7 @@ export default function SessionView({ session: initialSession, initialMessages =
       if (!token || ended) return;
       setIsStreaming(true);
       setError(null);
-
       setMessages((prev) => [...prev, { role: 'user', content, turnIndex: prev.length }]);
-
       try {
         const result = await apiFetch<SendMessageResult>(
           `/session/${initialSession.id}/message`,
@@ -75,7 +73,6 @@ export default function SessionView({ session: initialSession, initialMessages =
             body: JSON.stringify({ content }),
           },
         );
-
         setPreviousPhase(currentPhase);
         setCurrentPhase(result.phase);
         setMessages((prev) => [
@@ -105,23 +102,51 @@ export default function SessionView({ session: initialSession, initialMessages =
   if (ended) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <div className="max-w-md text-center">
+        <div
+          className="w-full max-w-md rounded-xl p-10 text-center"
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            boxShadow: 'var(--shadow-lg)',
+          }}
+        >
+          <div
+            className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
+            style={{ background: 'var(--accent-soft)' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          </div>
           <p
             className="text-sm font-semibold"
-            style={{ color: 'var(--teal)' }}
+            style={{ color: 'var(--accent)' }}
           >
             Session complete
           </p>
-          <h2 className="mt-2 font-sora text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          <h2
+            className="mt-2 text-2xl font-semibold"
+            style={{
+              fontFamily: 'var(--font-display)',
+              letterSpacing: '-0.02em',
+              color: 'var(--text-primary)',
+            }}
+          >
             Great work!
           </h2>
-          <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+          <p
+            className="mt-2 text-sm"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             Your knowledge model has been updated. Come back to review what you learned.
           </p>
           <a
             href="/dashboard"
-            className="mt-6 inline-block rounded-lg px-6 py-2.5 text-sm font-medium text-white"
-            style={{ background: 'linear-gradient(135deg, var(--primary), var(--teal))' }}
+            className="mt-6 inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90"
+            style={{
+              background: 'var(--accent)',
+              color: 'var(--accent-contrast)',
+            }}
           >
             Back to dashboard
           </a>
@@ -131,11 +156,14 @@ export default function SessionView({ session: initialSession, initialMessages =
   }
 
   return (
-    <div className="flex h-[calc(100vh-64px)] flex-col">
-      {/* Header */}
+    <div className="flex h-[calc(100vh-64px)] flex-col lg:h-screen">
+      {/* Session header */}
       <div
         className="flex items-center justify-between border-b px-5 py-3"
-        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-surface)' }}
+        style={{
+          borderColor: 'var(--border-default)',
+          backgroundColor: 'var(--bg-surface)',
+        }}
       >
         <div>
           <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -151,7 +179,7 @@ export default function SessionView({ session: initialSession, initialMessages =
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg-base)' }}>
         <ConversationThread
           messages={messages}
           isStreaming={isStreaming}
@@ -162,7 +190,12 @@ export default function SessionView({ session: initialSession, initialMessages =
       </div>
 
       {error && (
-        <p className="px-4 pb-1 text-xs text-red-400">{error}</p>
+        <p
+          className="px-4 pb-1 text-xs"
+          style={{ color: 'var(--error)' }}
+        >
+          {error}
+        </p>
       )}
 
       {/* Input */}
@@ -172,8 +205,6 @@ export default function SessionView({ session: initialSession, initialMessages =
         disabled={isStreaming || !token}
         onEndSession={() => void handleEndSession()}
       />
-
-      {/* TODO: implement SSE streaming in P-10 */}
     </div>
   );
 }

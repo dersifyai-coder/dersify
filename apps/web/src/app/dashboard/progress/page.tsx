@@ -6,16 +6,16 @@ import { createClient } from '@/lib/supabase/client';
 export const dynamic = 'force-dynamic';
 
 interface MisconceptionItem {
-  id: string;
-  conceptId: string;
-  topic: string;
-  description: string;
-  misconceptionType: string;
-  severity: string;
+  id:                  string;
+  conceptId:           string;
+  topic:               string;
+  description:         string;
+  misconceptionType:   string;
+  severity:            string;
   remediationStrategy: string | null;
-  frequency: number;
-  resolved: boolean;
-  concept: { displayName: string };
+  frequency:           number;
+  resolved:            boolean;
+  concept:             { displayName: string };
 }
 
 function buildApiUrl(path: string): string {
@@ -42,36 +42,47 @@ async function apiBrowserFetch<T>(
   return body.data;
 }
 
-const TYPE_STYLE: Record<string, string> = {
-  terminology: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  overgeneralization: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  underapplication: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  causal_inversion: 'bg-red-500/10 text-red-400 border-red-500/20',
-  false_analogy: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  structural: 'bg-red-500/10 text-red-400 border-red-500/20',
+const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  terminology:       { bg: 'var(--accent-soft)',          text: 'var(--accent)',         border: 'var(--accent-soft-border)'  },
+  overgeneralization:{ bg: 'rgba(234,179,8,0.08)',        text: 'var(--warning)',        border: 'rgba(234,179,8,0.25)'       },
+  underapplication:  { bg: 'rgba(234,179,8,0.08)',        text: 'var(--warning)',        border: 'rgba(234,179,8,0.25)'       },
+  causal_inversion:  { bg: 'rgba(239,68,68,0.08)',        text: 'var(--error)',          border: 'rgba(239,68,68,0.2)'        },
+  false_analogy:     { bg: 'rgba(168,85,247,0.08)',       text: 'rgb(168,85,247)',       border: 'rgba(168,85,247,0.2)'       },
+  structural:        { bg: 'rgba(239,68,68,0.08)',        text: 'var(--error)',          border: 'rgba(239,68,68,0.2)'        },
 };
 
-const SEVERITY_STYLE: Record<string, string> = {
-  surface: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
-  deep: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+const SEVERITY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  surface: { bg: 'var(--bg-subtle)',           text: 'var(--text-muted)',    border: 'var(--border-default)' },
+  deep:    { bg: 'rgba(249,115,22,0.08)',      text: 'rgb(249,115,22)',      border: 'rgba(249,115,22,0.2)'  },
 };
 
 const TYPE_LABEL: Record<string, string> = {
-  terminology: 'Terminology',
+  terminology:        'Terminology',
   overgeneralization: 'Overgeneralization',
-  underapplication: 'Underapplication',
-  causal_inversion: 'Causal Inversion',
-  false_analogy: 'False Analogy',
-  structural: 'Structural',
+  underapplication:   'Underapplication',
+  causal_inversion:   'Causal Inversion',
+  false_analogy:      'False Analogy',
+  structural:         'Structural',
 };
 
+function Badge({ colors, label }: { colors: { bg: string; text: string; border: string }; label: string }) {
+  return (
+    <span
+      className="rounded-full px-2 py-0.5 text-xs capitalize"
+      style={{ background: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}
+    >
+      {label}
+    </span>
+  );
+}
+
 export default function ProgressPage() {
-  const [token, setToken] = useState<string | null>(null);
-  const [topic, setTopic] = useState('');
+  const [token, setToken]                   = useState<string | null>(null);
+  const [topic, setTopic]                   = useState('');
   const [misconceptions, setMisconceptions] = useState<MisconceptionItem[]>([]);
-  const [loadingError, setLoadingError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [loadingError, setLoadingError]     = useState<string | null>(null);
+  const [loading, setLoading]               = useState(false);
+  const [resolvingId, setResolvingId]       = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -121,24 +132,46 @@ export default function ProgressPage() {
     >
       <div className="mx-auto max-w-3xl">
         <div className="mb-8">
-          <p className="text-sm font-semibold" style={{ color: 'var(--teal)' }}>
+          <p
+            className="text-[12px] font-semibold uppercase tracking-widest"
+            style={{ color: 'var(--accent)' }}
+          >
             Progress
           </p>
-          <h1 className="mt-1 font-sora text-2xl font-bold">Learning Progress</h1>
+          <h1
+            className="mt-2 text-2xl font-semibold"
+            style={{
+              fontFamily: 'var(--font-display)',
+              letterSpacing: '-0.02em',
+              color: 'var(--text-primary)',
+            }}
+          >
+            Learning progress
+          </h1>
         </div>
 
-        {/* Misconception Panel */}
+        {/* Misconception panel */}
         <section
-          className="rounded-xl border p-6"
-          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-surface)' }}
+          className="rounded-xl p-6"
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            boxShadow: 'var(--shadow-sm)',
+          }}
         >
           <div className="mb-5">
-            <h2 className="font-sora text-lg font-semibold">Active Misconceptions</h2>
-            <p className="mt-0.5 text-sm" style={{ color: 'var(--text-muted)' }}>
+            <h2
+              className="text-lg font-semibold"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}
+            >
+              Active misconceptions
+            </h2>
+            <p className="mt-0.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
               Unresolved knowledge gaps the AI will address in future sessions.
             </p>
           </div>
 
+          {/* Search */}
           <div className="mb-4 flex gap-2">
             <input
               type="text"
@@ -146,38 +179,55 @@ export default function ProgressPage() {
               onChange={(e) => setTopic(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') void fetchMisconceptions(); }}
               placeholder="Enter topic (e.g. python)"
-              className="flex-1 rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1"
+              className="flex-1 rounded-lg px-3 py-2 text-sm outline-none transition-all"
               style={{
-                borderColor: 'var(--border)',
-                backgroundColor: 'var(--bg-surface-2)',
+                border: '1px solid var(--border-default)',
+                backgroundColor: 'var(--bg-base)',
                 color: 'var(--text-primary)',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-focus)';
+                e.currentTarget.style.boxShadow = 'var(--focus-ring)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-default)';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             />
             <button
               onClick={() => void fetchMisconceptions()}
               disabled={!topic.trim() || loading}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, var(--primary), var(--teal))' }}
+              className="rounded-lg px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+              style={{ background: 'var(--accent)', color: 'var(--accent-contrast)' }}
             >
-              {loading ? 'Loading…' : 'View'}
+              {loading ? 'Loading...' : 'View'}
             </button>
           </div>
 
           {loadingError && (
-            <p className="mb-4 text-sm text-red-400">{loadingError}</p>
+            <p className="mb-4 text-sm" style={{ color: 'var(--error)' }}>
+              {loadingError}
+            </p>
           )}
 
           {token === null ? (
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              Loading…
+              Loading...
             </p>
           ) : misconceptions.length === 0 && !loading ? (
             <div
               className="rounded-lg border border-dashed py-10 text-center"
-              style={{ borderColor: 'var(--border)' }}
+              style={{ borderColor: 'var(--border-strong)' }}
             >
-              <div className="mb-2 text-2xl">✓</div>
-              <p className="text-sm font-medium" style={{ color: 'var(--text-subtle)' }}>
+              <div
+                className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full"
+                style={{ background: 'var(--accent-soft)' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                 No active misconceptions
               </p>
               <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -188,55 +238,70 @@ export default function ProgressPage() {
             </div>
           ) : (
             <ul className="space-y-3">
-              {misconceptions.map((m) => (
-                <li
-                  key={m.id}
-                  className="rounded-lg border p-4"
-                  style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-surface-2)' }}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm">{m.concept.displayName}</p>
-                      <p className="mt-1 text-sm" style={{ color: 'var(--text-subtle)' }}>
-                        {m.description}
-                      </p>
+              {misconceptions.map((m) => {
+                const typeColor = TYPE_COLORS[m.misconceptionType];
+                const sevColor  = SEVERITY_COLORS[m.severity];
+                return (
+                  <li
+                    key={m.id}
+                    className="rounded-lg p-4"
+                    style={{
+                      background: 'var(--bg-base)',
+                      border: '1px solid var(--border-default)',
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="font-medium text-sm"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          {m.concept.displayName}
+                        </p>
+                        <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                          {m.description}
+                        </p>
 
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <span
-                          className={`rounded-full border px-2 py-0.5 text-xs capitalize ${TYPE_STYLE[m.misconceptionType] ?? ''}`}
-                        >
-                          {TYPE_LABEL[m.misconceptionType] ?? m.misconceptionType}
-                        </span>
-                        <span
-                          className={`rounded-full border px-2 py-0.5 text-xs capitalize ${SEVERITY_STYLE[m.severity] ?? ''}`}
-                        >
-                          {m.severity}
-                        </span>
-                        {m.frequency > 1 && (
-                          <span
-                            className="rounded-full border px-2 py-0.5 text-xs"
-                            style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
-                          >
-                            ×{m.frequency}
-                          </span>
-                        )}
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {typeColor && (
+                            <Badge
+                              colors={typeColor}
+                              label={TYPE_LABEL[m.misconceptionType] ?? m.misconceptionType}
+                            />
+                          )}
+                          {sevColor && (
+                            <Badge colors={sevColor} label={m.severity} />
+                          )}
+                          {m.frequency > 1 && (
+                            <span
+                              className="rounded-full px-2 py-0.5 text-xs"
+                              style={{
+                                border: '1px solid var(--border-default)',
+                                color: 'var(--text-muted)',
+                              }}
+                            >
+                              x{m.frequency}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <button
-                      onClick={() => void handleResolve(m.id)}
-                      disabled={resolvingId === m.id}
-                      className="shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
-                      style={{
-                        borderColor: 'var(--teal)',
-                        color: 'var(--teal)',
-                      }}
-                    >
-                      {resolvingId === m.id ? '…' : 'Mark resolved'}
-                    </button>
-                  </div>
-                </li>
-              ))}
+                      <button
+                        onClick={() => void handleResolve(m.id)}
+                        disabled={resolvingId === m.id}
+                        className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+                        style={{
+                          border: '1px solid var(--accent)',
+                          color: 'var(--accent)',
+                          background: 'transparent',
+                        }}
+                      >
+                        {resolvingId === m.id ? '...' : 'Mark resolved'}
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
