@@ -12,6 +12,36 @@ export type MisconceptionWithConcept = Prisma.MisconceptionGetPayload<{
   include: { concept: { select: { displayName: true } } };
 }>;
 
+export interface TopicProgress {
+  topic: string;
+  lastStudiedAt: Date;
+  conceptCount: number;
+  safeCount: number;
+  slippingCount: number;
+  dueCount: number;
+  newCount: number;
+  forgettingCurveHealth: number;
+}
+
+export interface ConceptDueItem {
+  canonicalId: string;
+  displayName: string;
+  topic: string;
+  due: Date;
+  confidence: number;
+  fsrsState: number;
+  dueStatus: 'due' | 'slipping' | 'new';
+}
+
+export interface ProgressDashboard {
+  topics: TopicProgress[];
+  dueToday: ConceptDueItem[];
+  totalConceptsLearned: number;
+  totalSessions: number;
+  lastSessionAt: Date | null;
+  calibrationScore: number;
+}
+
 export interface ConceptWithState {
   canonicalId: string;
   displayName: string;
@@ -89,11 +119,11 @@ export class LearnerService {
         where: { id: learnerId },
       });
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2025'
-      ) {
-        throw new NotFoundException('Profile not found.');
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        // instanceof guards runtime; explicit cast needed because ts-jest doesn't narrow 'unknown' via instanceof
+        if ((error as Prisma.PrismaClientKnownRequestError).code === 'P2025') {
+          throw new NotFoundException('Profile not found.');
+        }
       }
       throw error;
     }
@@ -189,7 +219,9 @@ export class LearnerService {
       include: { concept: true },
     });
 
-    const toConceptWithState = (s: typeof states[number]): ConceptWithState => ({
+    type StateItem = typeof states[number];
+
+    const toConceptWithState = (s: StateItem): ConceptWithState => ({
       canonicalId: s.conceptId,
       displayName: s.concept.displayName,
       topic: s.topic,
@@ -203,22 +235,22 @@ export class LearnerService {
     });
 
     const confirmed = states
-      .filter((s) => s.confidence >= CONFIDENCE_CONFIRMED)
-      .sort((a, b) => b.confidence - a.confidence)
+      .filter((s: StateItem) => s.confidence >= CONFIDENCE_CONFIRMED)
+      .sort((a: StateItem, b: StateItem) => b.confidence - a.confidence)
       .slice(0, MAX_CONFIRMED)
       .map(toConceptWithState);
 
     const shaky = states
       .filter(
-        (s) => s.confidence >= CONFIDENCE_SHAKY_MIN && s.confidence < CONFIDENCE_CONFIRMED,
+        (s: StateItem) => s.confidence >= CONFIDENCE_SHAKY_MIN && s.confidence < CONFIDENCE_CONFIRMED,
       )
-      .sort((a, b) => a.due.getTime() - b.due.getTime())
+      .sort((a: StateItem, b: StateItem) => a.due.getTime() - b.due.getTime())
       .slice(0, MAX_SHAKY)
       .map(toConceptWithState);
 
     const newConcepts = states
-      .filter((s) => s.confidence < CONFIDENCE_SHAKY_MIN || s.fsrsState === 0)
-      .sort((a, b) => b.concept.sessionCount - a.concept.sessionCount)
+      .filter((s: StateItem) => s.confidence < CONFIDENCE_SHAKY_MIN || s.fsrsState === 0)
+      .sort((a: StateItem, b: StateItem) => b.concept.sessionCount - a.concept.sessionCount)
       .slice(0, MAX_NEW)
       .map(toConceptWithState);
 
@@ -263,14 +295,123 @@ export class LearnerService {
       });
       this.invalidateCache(layer1Key(learnerId, updated.topic));
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2025'
-      ) {
-        throw new NotFoundException('Misconception not found.');
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        // instanceof guards runtime; explicit cast needed because ts-jest doesn't narrow 'unknown' via instanceof
+        if ((error as Prisma.PrismaClientKnownRequestError).code === 'P2025') {
+          throw new NotFoundException('Misconception not found.');
+        }
       }
       throw error;
     }
+  }
+
+  async getProgressDashboard(learnerId: string): Promise<ProgressDashboard> {
+    const cacheKey = progressKey(learnerId);
+    const cached = this.getCache<ProgressDashboard>(cacheKey);
+    if (cached) return cached;
+
+    const now = new Date();
+    const endOfToday = new Date(now);
+    endOfToday.setHours(23, 59, 59, 999);
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+    type StateWithConcept = Prisma.LearnerKnowledgeStateGetPayload<{
+      include: { concept: { select: { displayName: true } } };
+    }>;
+
+    // Safe: Promise.all loses generic inference for complex Prisma include types;
+    // cast matches the exact findMany shape above.
+    const [statesRaw, sessionCount, lastSession, profile] = await Promise.all([
+      this.prisma.learnerKnowledgeState.findMany({
+        where: { learnerId },
+        include: { concept: { select: { displayName: true } } },
+      }) as Promise<StateWithConcept[]>,
+      this.prisma.session.count({ where: { learnerId } }),
+      this.prisma.session.findFirst({
+        where: { learnerId },
+        orderBy: { startedAt: 'desc' },
+        select: { startedAt: true },
+      }),
+      this.prisma.profile.findUniqueOrThrow({ where: { id: learnerId } }),
+    ]);
+
+    const states: StateWithConcept[] = statesRaw;
+    const topicMap = new Map<string, StateWithConcept[]>();
+    for (const state of states) {
+      const list = topicMap.get(state.topic) ?? [];
+      list.push(state);
+      topicMap.set(state.topic, list);
+    }
+
+    const topics: TopicProgress[] = [];
+    for (const [topic, topicStates] of topicMap) {
+      let safeCount = 0;
+      let slippingCount = 0;
+      let dueCount = 0;
+      let newCount = 0;
+      let lastStudiedAt: Date | null = null;
+
+      for (const s of topicStates) {
+        const reviewDate = s.lastReviewedAt ?? s.createdAt;
+        if (!lastStudiedAt || reviewDate > lastStudiedAt) {
+          lastStudiedAt = reviewDate;
+        }
+
+        if (s.fsrsState === 0) {
+          newCount++;
+        } else if (s.due <= endOfToday) {
+          dueCount++;
+        } else if (s.confidence < CONFIDENCE_CONFIRMED || s.due <= threeDaysFromNow) {
+          slippingCount++;
+        } else {
+          safeCount++;
+        }
+      }
+
+      const conceptCount = topicStates.length;
+      const forgettingCurveHealth =
+        conceptCount > 0 ? Math.round((safeCount / conceptCount) * 100) : 0;
+
+      topics.push({
+        topic,
+        lastStudiedAt: lastStudiedAt ?? now,
+        conceptCount,
+        safeCount,
+        slippingCount,
+        dueCount,
+        newCount,
+        forgettingCurveHealth,
+      });
+    }
+
+    topics.sort((a, b) => b.lastStudiedAt.getTime() - a.lastStudiedAt.getTime());
+
+    const dueToday: ConceptDueItem[] = states
+      .filter((s) => s.due <= endOfToday)
+      .map((s): ConceptDueItem => ({
+        canonicalId: s.conceptId,
+        displayName: s.concept.displayName,
+        topic: s.topic,
+        due: s.due,
+        confidence: s.confidence,
+        fsrsState: s.fsrsState,
+        dueStatus: s.fsrsState === 0 ? 'new' : 'due',
+      }))
+      .sort((a, b) => a.due.getTime() - b.due.getTime());
+
+    const totalConceptsLearned = states.filter((s) => s.reps > 0).length;
+
+    const dashboard: ProgressDashboard = {
+      topics,
+      dueToday,
+      totalConceptsLearned,
+      totalSessions: sessionCount,
+      lastSessionAt: lastSession?.startedAt ?? null,
+      calibrationScore: profile.calibrationScore,
+    };
+
+    this.setCache(cacheKey, dashboard, TTL_PROGRESS);
+    return dashboard;
   }
 
   invalidateCachesForTopic(learnerId: string, topic: string): void {

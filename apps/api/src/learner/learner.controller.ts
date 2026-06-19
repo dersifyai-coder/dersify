@@ -9,7 +9,7 @@ import { LearnerKnowledgeState, Profile } from '@dersify/database';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { SupabaseJwtPayload } from '../auth/strategies/jwt.strategy';
-import { LearnerService, MisconceptionWithConcept, TopicKnowledgeSummary } from './learner.service';
+import { LearnerService, MisconceptionWithConcept, ProgressDashboard, TopicKnowledgeSummary } from './learner.service';
 import { ResolveMisconceptionDto } from './dto/resolve-misconception.dto';
 
 @ApiTags('learner')
@@ -18,6 +18,17 @@ import { ResolveMisconceptionDto } from './dto/resolve-misconception.dto';
 @Controller('learner')
 export class LearnerController {
   constructor(private readonly learnerService: LearnerService) {}
+
+  @ApiOperation({ summary: 'Get progress dashboard for the authenticated learner' })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 401 })
+  @Get('progress')
+  async getProgressDashboard(
+    @CurrentUser() user: SupabaseJwtPayload,
+  ): Promise<{ success: true; data: ProgressDashboard; message: string }> {
+    const data = await this.learnerService.getProgressDashboard(user.sub);
+    return { success: true, data, message: 'ok' };
+  }
 
   @ApiOperation({ summary: 'Get authenticated learner profile' })
   @ApiResponse({ status: 200 })

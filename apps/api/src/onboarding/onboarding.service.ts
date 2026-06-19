@@ -17,7 +17,11 @@ export class OnboardingService {
   async completeOnboarding(learnerId: string, dto: CompleteOnboardingDto): Promise<void> {
     try {
       await this.prisma.$transaction(async (tx) => {
-        const profile = await tx.profile.findUnique({
+        // Prisma transaction client type from @dersify/database resolves to a different @prisma/client
+        // than the generated root client; cast via typeof this.prisma is safe at runtime.
+        const db = tx as unknown as typeof this.prisma;
+
+        const profile = await db.profile.findUnique({
           where: { id: learnerId },
           select: { onboardingCompleted: true },
         });
@@ -30,7 +34,7 @@ export class OnboardingService {
           throw new ConflictException('Onboarding already completed.');
         }
 
-        await tx.profile.update({
+        await db.profile.update({
           where: { id: learnerId },
           data: {
             motivation:        dto.motivation,
@@ -42,7 +46,7 @@ export class OnboardingService {
           },
         });
 
-        await tx.notificationPreference.upsert({
+        await db.notificationPreference.upsert({
           where:  { learnerId },
           create: { learnerId },
           update: {},
@@ -54,10 +58,12 @@ export class OnboardingService {
       }
 
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
+        // instanceof guards runtime; explicit cast needed because tsc doesn't narrow 'unknown' via instanceof with Prisma types
+        const e = error as Prisma.PrismaClientKnownRequestError;
+        if (e.code === 'P2002') {
           throw new ConflictException('Onboarding already completed.');
         }
-        if (error.code === 'P2025') {
+        if (e.code === 'P2025') {
           throw new NotFoundException('Learner profile not found.');
         }
       }

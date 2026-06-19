@@ -57,6 +57,7 @@ describe('LearnerService', () => {
     learnerKnowledgeState: jest.Mocked<Record<string, jest.Mock>>;
     misconception: jest.Mocked<Record<string, jest.Mock>>;
     profile: jest.Mocked<Record<string, jest.Mock>>;
+    session: jest.Mocked<Record<string, jest.Mock>>;
   };
   let misconceptionService: { addOrUpdateMisconception: jest.Mock };
 
@@ -73,6 +74,10 @@ describe('LearnerService', () => {
       },
       profile: {
         findUniqueOrThrow: jest.fn(),
+      },
+      session: {
+        count: jest.fn(),
+        findFirst: jest.fn(),
       },
     };
 
@@ -186,6 +191,120 @@ describe('LearnerService', () => {
       await expect(
         service.resolveMisconception('learner-uuid', 'bad-id'),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getProgressDashboard', () => {
+    const LEARNER = 'learner-uuid';
+    const PAST = new Date('2000-01-01T00:00:00Z');
+    const FUTURE_FAR = new Date('2099-01-01T00:00:00Z');
+    const LAST_REVIEWED = new Date('2026-01-14T12:00:00Z');
+
+    function makeProgressState(overrides: Record<string, unknown> = {}) {
+      return makeStateRow({
+        reps: 1,
+        fsrsState: 2,
+        confidence: 0.8,
+        due: FUTURE_FAR,
+        lastReviewedAt: LAST_REVIEWED,
+        ...overrides,
+      });
+    }
+
+    function mockSessionAndProfile(sessionCount = 0, lastSessionAt: Date | null = null) {
+      prisma.session.count.mockResolvedValue(sessionCount);
+      prisma.session.findFirst.mockResolvedValue(lastSessionAt ? { startedAt: lastSessionAt } : null);
+      prisma.profile.findUniqueOrThrow.mockResolvedValue({ calibrationScore: 0.1 });
+    }
+
+    it('returns empty topics array for brand new learner', async () => {
+      prisma.learnerKnowledgeState.findMany.mockResolvedValue([]);
+      mockSessionAndProfile(0, null);
+
+      const result = await service.getProgressDashboard(LEARNER);
+
+      expect(result.topics).toHaveLength(0);
+      expect(result.dueToday).toHaveLength(0);
+      expect(result.totalConceptsLearned).toBe(0);
+      expect(result.totalSessions).toBe(0);
+      expect(result.lastSessionAt).toBeNull();
+    });
+
+    it('forgettingCurveHealth = 100 when all concepts are safe', async () => {
+      const safeState = makeProgressState({ confidence: 0.9, due: FUTURE_FAR, fsrsState: 2, reps: 1 });
+      prisma.learnerKnowledgeState.findMany.mockResolvedValue([safeState]);
+      mockSessionAndProfile(1, LAST_REVIEWED);
+
+      const result = await service.getProgressDashboard(LEARNER);
+
+      expect(result.topics[0].forgettingCurveHealth).toBe(100);
+      expect(result.topics[0].safeCount).toBe(1);
+      expect(result.topics[0].newCount).toBe(0);
+    });
+
+    it('forgettingCurveHealth = 0 when all concepts are new', async () => {
+      const newState = makeProgressState({ fsrsState: 0, reps: 0, confidence: 0.0, due: FUTURE_FAR });
+      prisma.learnerKnowledgeState.findMany.mockResolvedValue([newState]);
+      mockSessionAndProfile(0, null);
+
+      const result = await service.getProgressDashboard(LEARNER);
+
+      expect(result.topics[0].forgettingCurveHealth).toBe(0);
+      expect(result.topics[0].newCount).toBe(1);
+      expect(result.topics[0].safeCount).toBe(0);
+    });
+
+    it('groups concepts by due status correctly', async () => {
+      const safeState = makeProgressState({ id: 'safe', confidence: 0.9, due: FUTURE_FAR, fsrsState: 2, reps: 1 });
+      const slippingState = makeProgressState({ id: 'slip', confidence: 0.45, due: FUTURE_FAR, fsrsState: 2, reps: 1 });
+      const dueState = makeProgressState({ id: 'due', confidence: 0.5, due: PAST, fsrsState: 2, reps: 1 });
+      const newState = makeProgressState({ id: 'new', fsrsState: 0, reps: 0, confidence: 0.0 });
+
+      prisma.learnerKnowledgeState.findMany.mockResolvedValue([safeState, slippingState, dueState, newState]);
+      mockSessionAndProfile(2, LAST_REVIEWED);
+
+      const result = await service.getProgressDashboard(LEARNER);
+
+      const topic = result.topics[0];
+      expect(topic.safeCount).toBe(1);
+      expect(topic.slippingCount).toBe(1);
+      expect(topic.dueCount).toBe(1);
+      expect(topic.newCount).toBe(1);
+    });
+
+    it('dueToday includes only concepts with due <= today across all topics', async () => {
+      const dueMath = makeProgressState({
+        id: 'due-math',
+        topic: 'math',
+        due: PAST,
+        fsrsState: 2,
+        reps: 1,
+      });
+      const notDueMath = makeProgressState({
+        id: 'notdue-math',
+        topic: 'math',
+        due: FUTURE_FAR,
+        fsrsState: 2,
+        reps: 1,
+      });
+      const duePhysics = makeProgressState({
+        id: 'due-physics',
+        topic: 'physics',
+        conceptId: 'physics.velocity',
+        concept: { canonicalId: 'physics.velocity', displayName: 'Velocity', topic: 'physics', sessionCount: 1 },
+        due: PAST,
+        fsrsState: 2,
+        reps: 1,
+      });
+
+      prisma.learnerKnowledgeState.findMany.mockResolvedValue([dueMath, notDueMath, duePhysics]);
+      mockSessionAndProfile(1, LAST_REVIEWED);
+
+      const result = await service.getProgressDashboard(LEARNER);
+
+      expect(result.dueToday).toHaveLength(2);
+      const dueTopics = result.dueToday.map((d) => d.topic).sort();
+      expect(dueTopics).toEqual(['math', 'physics']);
     });
   });
 });

@@ -109,7 +109,7 @@ export class MisconceptionService {
       where: { learnerId, conceptId: data.conceptId, resolved: false },
     });
 
-    const match = existing.find((m) => isSimilarDescription(m.description, data.description));
+    const match = existing.find((m: typeof existing[number]) => isSimilarDescription(m.description, data.description));
 
     if (match) {
       const shouldUpdateRemediation =

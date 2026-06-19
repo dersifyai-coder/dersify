@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { LearnerService } from '../learner/learner.service';
+import { ConceptWithState, LearnerService, MisconceptionWithConcept } from '../learner/learner.service';
 import { RagService } from '../rag/rag.service';
 import { ContextBudgetManager } from './context-budget.manager';
 import { MOTIVATION_FRAMING } from './motivation-framing';
@@ -80,15 +80,15 @@ export class ContextService {
 
     const calibration = this.buildCalibrationLine(profile.calibrationScore);
 
-    const confirmedNames = knowledgeSummary.confirmed.map((c) => c.displayName).join(', ') || 'None yet';
-    const shakyNames = knowledgeSummary.shaky.map((c) => c.displayName).join(', ') || 'None';
-    const newNames = knowledgeSummary.newConcepts.map((c) => c.displayName).join(', ') || 'None';
+    const confirmedNames = knowledgeSummary.confirmed.map((c: ConceptWithState) => c.displayName).join(', ') || 'None yet';
+    const shakyNames = knowledgeSummary.shaky.map((c: ConceptWithState) => c.displayName).join(', ') || 'None';
+    const newNames = knowledgeSummary.newConcepts.map((c: ConceptWithState) => c.displayName).join(', ') || 'None';
 
     const misconceptionLines =
       misconceptions.length > 0
         ? misconceptions
             .slice(0, 5)
-            .map((m) => {
+            .map((m: MisconceptionWithConcept) => {
               const lines = [
                 `• ${m.concept.displayName}: ${m.description}`,
                 `  Type: ${m.misconceptionType} | Severity: ${m.severity}`,
@@ -190,7 +190,7 @@ export class ContextService {
       orderBy: { turnIndex: 'asc' },
     });
 
-    return messages.map((m) => ({
+    return messages.map((m: typeof messages[number]) => ({
       role: m.role as 'user' | 'assistant',
       content:
         m.compressed && m.compressionSummary != null ? m.compressionSummary : m.content,

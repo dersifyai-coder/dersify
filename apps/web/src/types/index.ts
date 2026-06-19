@@ -64,3 +64,33 @@ export interface EndSessionResult {
   summary: SessionSummary;
   consolidationQuestion: string | null;
 }
+
+export interface TopicProgress {
+  topic: string;
+  lastStudiedAt: string;
+  conceptCount: number;
+  safeCount: number;
+  slippingCount: number;
+  dueCount: number;
+  newCount: number;
+  forgettingCurveHealth: number;
+}
+
+export interface ConceptDueItem {
+  canonicalId: string;
+  displayName: string;
+  topic: string;
+  due: string;
+  confidence: number;
+  fsrsState: number;
+  dueStatus: 'due' | 'slipping' | 'new';
+}
+
+export interface ProgressDashboard {
+  topics: TopicProgress[];
+  dueToday: ConceptDueItem[];
+  totalConceptsLearned: number;
+  totalSessions: number;
+  lastSessionAt: string | null;
+  calibrationScore: number;
+}
