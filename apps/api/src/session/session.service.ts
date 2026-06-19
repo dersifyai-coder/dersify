@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -34,6 +35,11 @@ import {
   ExchangeEvaluationContext,
   ExchangeEvaluationSchema,
 } from '../ai/prompts/exchange-evaluation.prompt';
+import {
+  buildPostSessionSummaryPrompt,
+  PostSessionSummary,
+  PostSessionSummarySchema,
+} from '../ai/prompts/post-session-summary.prompt';
 import { StartSessionDto } from './dto/start-session.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 
@@ -104,6 +110,14 @@ export interface SendMessageResult {
 export interface SessionConsolidationJobData {
   sessionId: string;
   learnerId: string;
+  topic: string;
+  calibrationDelta: number;
+  conceptsEngaged: string[];
+}
+
+export interface EndSessionResult {
+  summary: PostSessionSummary;
+  consolidationQuestion: string | null;
 }
 
 @Injectable()
@@ -205,7 +219,7 @@ export class SessionService {
     const totalTokenEstimate =
       this.budgetManager.estimateTokens(systemPrompt) +
       orderedMessages.reduce(
-        (sum, m) =>
+        (sum: number, m: SessionMessage) =>
           sum + this.budgetManager.estimateTokens(m.compressed && m.compressionSummary ? m.compressionSummary : m.content),
         0,
       ) +
@@ -426,29 +440,54 @@ export class SessionService {
     await this.saveInsights(sessionId, updatedInsights);
   }
 
-  async endSession(learnerId: string, sessionId: string): Promise<void> {
+  async endSession(learnerId: string, sessionId: string): Promise<EndSessionResult> {
     const session = await this.prisma.session.findUnique({
       where: { id: sessionId },
     });
 
     if (!session) throw new NotFoundException('Session not found');
     if (session.learnerId !== learnerId) throw new ForbiddenException('Access denied');
+    if (session.endedAt) throw new ConflictException('Session has already ended');
+
+    const insights = await this.loadInsights(sessionId);
+
+    const [summary, consolidationQuestion] = await Promise.all([
+      this.generatePostSessionSummary(session, insights),
+      session.currentPhase !== 'consolidation'
+        ? this.generateConsolidationQuestion(session, insights)
+        : Promise.resolve(null),
+    ]);
 
     await this.prisma.session.update({
       where: { id: sessionId },
       data: { endedAt: new Date() },
     });
 
-    // Fire-and-forget: don't block the response on queue/Redis availability
     void this.consolidationQueue
-      .add('consolidate', { sessionId, learnerId }, { attempts: 3, backoff: { type: 'exponential', delay: 2000 } })
-      .catch((err: unknown) => this.logger.warn('consolidation_enqueue_failed', { sessionId, reason: String(err) }));
+      .add(
+        'consolidate',
+        {
+          sessionId,
+          learnerId,
+          topic: session.topic,
+          calibrationDelta: insights.calibrationDelta,
+          conceptsEngaged: insights.conceptsEngaged,
+        },
+        { attempts: 3, backoff: { type: 'exponential', delay: 2000 } },
+      )
+      .catch((err: unknown) =>
+        this.logger.warn('consolidation_enqueue_failed', { sessionId, reason: String(err) }),
+      );
 
     void this.redisService
       .del(insightsKey(sessionId))
-      .catch((err: unknown) => this.logger.warn('insights_del_failed', { sessionId, reason: String(err) }));
+      .catch((err: unknown) =>
+        this.logger.warn('insights_del_failed', { sessionId, reason: String(err) }),
+      );
 
     this.invalidateContextCaches(learnerId, session.topic);
+
+    return { summary, consolidationQuestion };
   }
 
   async getSessionHistory(
@@ -476,6 +515,67 @@ export class SessionService {
   }
 
   // ─── Private helpers ────────────────────────────────────────────────────────
+
+  private async generatePostSessionSummary(
+    session: Session,
+    insights: SessionInsights,
+  ): Promise<PostSessionSummary> {
+    const durationMinutes = Math.round((Date.now() - session.startedAt.getTime()) / 60_000);
+
+    const messages = buildPostSessionSummaryPrompt({
+      topic: session.topic,
+      durationMinutes,
+      exchangeCount: session.exchangesCount,
+      conceptsCovered: insights.conceptsEngaged,
+      conceptsConfirmed: insights.conceptsConfirmed,
+      newMisconceptions: insights.newMisconceptionsDetected.map((m) => m.description),
+      phase: session.currentPhase,
+      priorKnowledgeSignal: session.priorKnowledgeSignal,
+    });
+
+    try {
+      return await this.aiService.chatWithSchema('session_summary', messages, PostSessionSummarySchema);
+    } catch (err) {
+      if (err instanceof AiUnavailableException) {
+        this.logger.warn('post_session_summary_unavailable', { sessionId: session.id });
+        return {
+          title: `${session.topic} — ${new Date().toLocaleDateString()}`,
+          whatWeCovered: insights.conceptsEngaged.slice(0, 3).map((c) => `Explored ${c}.`) || [
+            'Explored the topic together.',
+          ],
+          whatYouHave: ['You kept the session going — that takes effort.'],
+          nextFocus: ['Continue from where you left off in the next session.'],
+          estimatedRetention: 50,
+        };
+      }
+      throw err;
+    }
+  }
+
+  private async generateConsolidationQuestion(
+    session: Session,
+    insights: SessionInsights,
+  ): Promise<string | null> {
+    const recentConcepts = insights.conceptsEngaged.slice(-3);
+    if (recentConcepts.length === 0) return null;
+
+    const messages = buildSessionTurnMessages({
+      systemPrompt:
+        'You are a learning tutor. Generate one short reflective question to help a learner consolidate what they just covered. One or two sentences only. No preamble.',
+      conversationHistory: [],
+      newUserMessage: `Topic: ${session.topic}\nConcepts just covered: ${recentConcepts.join(', ')}\n\nGenerate a single consolidation question for the learner.`,
+    });
+
+    try {
+      return await this.aiService.chat('session_turn_free', messages, 'free');
+    } catch (err) {
+      if (err instanceof AiUnavailableException) {
+        this.logger.warn('consolidation_question_unavailable', { sessionId: session.id });
+        return null;
+      }
+      throw err;
+    }
+  }
 
   private async createNewSession(
     learnerId: string,

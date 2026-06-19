@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bullmq';
 import { AiService } from '../ai/ai.service';
@@ -386,11 +386,20 @@ describe('SessionService', () => {
 
   // ─── endSession ────────────────────────────────────────────────────────────
 
-  describe('endSession', () => {
-    it('sets endedAt and deletes Redis insights', async () => {
-      mockPrisma.session.findUnique.mockResolvedValue(makeSession());
+  const MOCK_SUMMARY = {
+    title: 'React hooks: managing state',
+    whatWeCovered: ['You explored how useState works.'],
+    whatYouHave: ['You can correctly use useState to track values.'],
+    nextFocus: ['Practice useEffect with a real dependency array.'],
+    estimatedRetention: 72,
+  };
 
-      await service.endSession(LEARNER_ID, SESSION_ID);
+  describe('endSession', () => {
+    it('sets endedAt, deletes Redis insights, and returns summary', async () => {
+      mockPrisma.session.findUnique.mockResolvedValue(makeSession());
+      mockAiService.chatWithSchema.mockResolvedValue(MOCK_SUMMARY);
+
+      const result = await service.endSession(LEARNER_ID, SESSION_ID);
 
       expect(mockPrisma.session.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -398,12 +407,63 @@ describe('SessionService', () => {
         }),
       );
       expect(mockRedisService.del).toHaveBeenCalledWith(`dersify:insights:${SESSION_ID}`);
+      expect(result.summary).toMatchObject(MOCK_SUMMARY);
+    });
+
+    it('includes consolidation question when phase is not consolidation and concepts exist', async () => {
+      const insightsWithConcepts = {
+        ...initSessionInsights('beginner'),
+        conceptsEngaged: ['useState'],
+        calibrationDelta: 0,
+      };
+      mockRedisService.get.mockResolvedValue(JSON.stringify(insightsWithConcepts));
+      mockPrisma.session.findUnique.mockResolvedValue(makeSession({ currentPhase: 'core' }));
+      mockAiService.chatWithSchema.mockResolvedValue(MOCK_SUMMARY);
+      mockAiService.chat.mockResolvedValue('How would you explain useState to a beginner?');
+
+      const result = await service.endSession(LEARNER_ID, SESSION_ID);
+
+      expect(result.consolidationQuestion).toBe('How would you explain useState to a beginner?');
+    });
+
+    it('returns null consolidation question when phase is consolidation', async () => {
+      mockPrisma.session.findUnique.mockResolvedValue(makeSession({ currentPhase: 'consolidation' }));
+      mockAiService.chatWithSchema.mockResolvedValue(MOCK_SUMMARY);
+
+      const result = await service.endSession(LEARNER_ID, SESSION_ID);
+
+      expect(result.consolidationQuestion).toBeNull();
+    });
+
+    it('throws ConflictException when session is already ended', async () => {
+      mockPrisma.session.findUnique.mockResolvedValue(makeSession({ endedAt: new Date() }));
+
+      await expect(service.endSession(LEARNER_ID, SESSION_ID)).rejects.toThrow(ConflictException);
     });
 
     it('throws NotFoundException for unknown session', async () => {
       mockPrisma.session.findUnique.mockResolvedValue(null);
 
       await expect(service.endSession(LEARNER_ID, SESSION_ID)).rejects.toThrow(NotFoundException);
+    });
+
+    it('enqueues consolidation job with topic, calibrationDelta, and conceptsEngaged', async () => {
+      mockPrisma.session.findUnique.mockResolvedValue(makeSession());
+      mockAiService.chatWithSchema.mockResolvedValue(MOCK_SUMMARY);
+
+      await service.endSession(LEARNER_ID, SESSION_ID);
+
+      expect(mockConsolidationQueue.add).toHaveBeenCalledWith(
+        'consolidate',
+        expect.objectContaining({
+          sessionId: SESSION_ID,
+          learnerId: LEARNER_ID,
+          topic: 'React hooks',
+          calibrationDelta: expect.any(Number),
+          conceptsEngaged: expect.any(Array),
+        }),
+        expect.any(Object),
+      );
     });
   });
 

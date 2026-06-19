@@ -11,7 +11,9 @@ import {
   QUEUE_WEEKLY_DIGEST,
 } from './queue.constants';
 import { EmbeddingProcessor } from './processors/embedding.processor';
+import { SessionConsolidationProcessor } from './processors/session-consolidation.processor';
 import { AiModule } from '../ai/ai.module';
+import { LearnerModule } from '../learner/learner.module';
 import { type AppConfig } from '../config/configuration';
 
 @Module({
@@ -37,8 +39,9 @@ import { type AppConfig } from '../config/configuration';
       { name: QUEUE_SESSION_CONSOLIDATION },
     ),
     AiModule,
+    LearnerModule,
   ],
-  providers: [EmbeddingProcessor],
+  providers: [EmbeddingProcessor, SessionConsolidationProcessor],
   exports: [BullModule],
 })
 export class QueueModule {}

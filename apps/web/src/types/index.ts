@@ -51,3 +51,16 @@ export interface DisplayMessage {
   content: string;
   turnIndex: number;
 }
+
+export interface SessionSummary {
+  title: string;
+  whatWeCovered: string[];
+  whatYouHave: string[];
+  nextFocus: string[];
+  estimatedRetention: number;
+}
+
+export interface EndSessionResult {
+  summary: SessionSummary;
+  consolidationQuestion: string | null;
+}

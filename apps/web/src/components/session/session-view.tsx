@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { ActiveSession, DisplayMessage, SendMessageResult, SessionMessage } from '@/types';
+import type { ActiveSession, DisplayMessage, EndSessionResult, SendMessageResult, SessionMessage } from '@/types';
 import ConversationThread from './conversation-thread';
 import MessageInput from './message-input';
+import SessionEndScreen from './session-end-screen';
 
 interface Props {
   session:          ActiveSession;
@@ -47,7 +48,7 @@ export default function SessionView({ session: initialSession, initialMessages =
   const [isStreaming, setIsStreaming]   = useState(false);
   const [currentPhase, setCurrentPhase] = useState(initialSession.currentPhase);
   const [previousPhase, setPreviousPhase] = useState<string | undefined>(undefined);
-  const [ended, setEnded]               = useState(false);
+  const [endResult, setEndResult]       = useState<EndSessionResult | null>(null);
   const [error, setError]               = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,7 +60,7 @@ export default function SessionView({ session: initialSession, initialMessages =
 
   const handleSendMessage = useCallback(
     async (content: string) => {
-      if (!token || ended) return;
+      if (!token || endResult) return;
       setIsStreaming(true);
       setError(null);
       setMessages((prev) => [...prev, { role: 'user', content, turnIndex: prev.length }]);
@@ -86,73 +87,25 @@ export default function SessionView({ session: initialSession, initialMessages =
         setIsStreaming(false);
       }
     },
-    [token, ended, currentPhase, initialSession.id],
+    [token, endResult, currentPhase, initialSession.id],
   );
 
   const handleEndSession = useCallback(async () => {
     if (!token) return;
     try {
-      await apiFetch<void>(`/session/${initialSession.id}/end`, token, { method: 'POST' });
-      setEnded(true);
+      const result = await apiFetch<EndSessionResult>(
+        `/session/${initialSession.id}/end`,
+        token,
+        { method: 'POST' },
+      );
+      setEndResult(result);
     } catch (err) {
       setError((err as Error).message);
     }
   }, [token, initialSession.id]);
 
-  if (ended) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <div
-          className="w-full max-w-md rounded-xl p-10 text-center"
-          style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-default)',
-            boxShadow: 'var(--shadow-lg)',
-          }}
-        >
-          <div
-            className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
-            style={{ background: 'var(--accent-soft)' }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5">
-              <path d="M20 6L9 17l-5-5" />
-            </svg>
-          </div>
-          <p
-            className="text-sm font-semibold"
-            style={{ color: 'var(--accent)' }}
-          >
-            Session complete
-          </p>
-          <h2
-            className="mt-2 text-2xl font-semibold"
-            style={{
-              fontFamily: 'var(--font-display)',
-              letterSpacing: '-0.02em',
-              color: 'var(--text-primary)',
-            }}
-          >
-            Great work!
-          </h2>
-          <p
-            className="mt-2 text-sm"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            Your knowledge model has been updated. Come back to review what you learned.
-          </p>
-          <a
-            href="/dashboard"
-            className="mt-6 inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90"
-            style={{
-              background: 'var(--accent)',
-              color: 'var(--accent-contrast)',
-            }}
-          >
-            Back to dashboard
-          </a>
-        </div>
-      </div>
-    );
+  if (endResult) {
+    return <SessionEndScreen topic={initialSession.topic} result={endResult} />;
   }
 
   return (
@@ -202,7 +155,7 @@ export default function SessionView({ session: initialSession, initialMessages =
       <MessageInput
         sessionId={initialSession.id}
         onMessage={(content) => void handleSendMessage(content)}
-        disabled={isStreaming || !token}
+        disabled={isStreaming || !token || !!endResult}
         onEndSession={() => void handleEndSession()}
       />
     </div>
