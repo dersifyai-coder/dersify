@@ -34,6 +34,7 @@ const mockPrisma = {
   },
   errorEvent: {
     create: jest.fn(),
+    findMany: jest.fn(),
   },
   $transaction: jest.fn(),
 };
@@ -138,6 +139,7 @@ describe('SessionService', () => {
       merged: false,
     });
     mockPrisma.errorEvent.create.mockResolvedValue({});
+    mockPrisma.errorEvent.findMany.mockResolvedValue([]);
     mockContextService.buildSystemPrompt.mockResolvedValue({
       systemPrompt: 'You are Dersify...',
       conversationHistory: [],
@@ -203,11 +205,18 @@ describe('SessionService', () => {
     it('returns resumeType=continue if session active within 2h', async () => {
       const recentSession = makeSession({ endedAt: null, lastActivityAt: new Date() });
       mockPrisma.session.findFirst.mockResolvedValue(recentSession);
-      mockPrisma.sessionMessage.findFirst.mockResolvedValue({
-        content: 'Last AI message',
-        turnIndex: 0,
-        role: 'assistant',
-      });
+      mockPrisma.sessionMessage.findMany.mockResolvedValue([
+        {
+          id: 'msg-1',
+          sessionId: SESSION_ID,
+          role: 'assistant',
+          content: 'Last AI message',
+          turnIndex: 0,
+          compressed: false,
+          compressionSummary: null,
+          createdAt: new Date(),
+        },
+      ]);
 
       const result = await service.startSession(LEARNER_ID, {
         topic: 'React hooks',
@@ -220,7 +229,7 @@ describe('SessionService', () => {
       expect(mockPrisma.session.create).not.toHaveBeenCalled();
     });
 
-    it('returns resumeType=smart if session is 2-24h old', async () => {
+    it('returns resumeType=smart and creates a new session if session is 2-24h old', async () => {
       const staleMs = 3 * 60 * 60 * 1000; // 3h
       const oldSession = makeSession({
         lastActivityAt: new Date(Date.now() - staleMs),
@@ -229,6 +238,9 @@ describe('SessionService', () => {
       mockPrisma.session.findFirst.mockResolvedValue(oldSession);
       mockPrisma.sessionMessage.findMany.mockResolvedValue([]);
       mockBudgetManager.buildCompressionSummary.mockResolvedValue('Summary of last session');
+      const newSession = makeSession({ id: 'new-smart-session-id' });
+      mockPrisma.session.create.mockResolvedValue(newSession);
+      mockPrisma.sessionMessage.create.mockResolvedValue({});
 
       const result = await service.startSession(LEARNER_ID, {
         topic: 'React hooks',
@@ -237,8 +249,12 @@ describe('SessionService', () => {
       });
 
       expect(result.resumeType).toBe('smart');
-      expect(result.sessionId).toBe(SESSION_ID);
-      expect(mockPrisma.session.create).not.toHaveBeenCalled();
+      expect(result.sessionId).toBe('new-smart-session-id');
+      expect(mockPrisma.session.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ learnerId: LEARNER_ID, topic: 'React hooks' }),
+        }),
+      );
     });
 
     it('creates a new session if prior session is >24h old', async () => {
@@ -276,6 +292,70 @@ describe('SessionService', () => {
 
       expect(result.resumeType).toBe('new');
       expect(mockPrisma.session.create).toHaveBeenCalled();
+    });
+
+    it('true resume rebuilds SessionInsights from error_events when Redis is empty', async () => {
+      const recentSession = makeSession({ endedAt: null, lastActivityAt: new Date() });
+      mockPrisma.session.findFirst.mockResolvedValue(recentSession);
+      mockRedisService.get.mockResolvedValue(null); // Redis expired
+      mockPrisma.sessionMessage.findMany.mockResolvedValue([]);
+      mockPrisma.errorEvent.findMany.mockResolvedValue([
+        { conceptId: 'react.hooks', retentionQuality: 1 },
+        { conceptId: 'react.effects', retentionQuality: 2 },
+        { conceptId: 'react.state', retentionQuality: 4 },
+      ]);
+
+      await service.startSession(LEARNER_ID, {
+        topic: 'React hooks',
+        prior_knowledge_signal: 'beginner',
+        time_available_minutes: 30,
+      });
+
+      const setCalls = mockRedisService.set.mock.calls as unknown as Array<[string, string, number]>;
+      const insightsSetCall = setCalls.find(([key]) => key === `dersify:insights:${SESSION_ID}`);
+      expect(insightsSetCall).toBeDefined();
+      const savedInsights = JSON.parse(insightsSetCall![1]) as {
+        struggleSignals: number;
+        conceptsEngaged: string[];
+      };
+      expect(savedInsights.struggleSignals).toBe(2);
+      expect(savedInsights.conceptsEngaged).toContain('react.hooks');
+    });
+
+    it('smart resume seeds new session insights from error_events', async () => {
+      const staleMs = 3 * 60 * 60 * 1000;
+      const oldSession = makeSession({
+        lastActivityAt: new Date(Date.now() - staleMs),
+        endedAt: new Date(Date.now() - staleMs),
+      });
+      mockPrisma.session.findFirst.mockResolvedValue(oldSession);
+      mockPrisma.sessionMessage.findMany.mockResolvedValue([]);
+      mockBudgetManager.buildCompressionSummary.mockResolvedValue('Summary');
+      mockPrisma.errorEvent.findMany.mockResolvedValue([
+        { conceptId: 'react.hooks', retentionQuality: 1 },
+        { conceptId: 'react.effects', retentionQuality: 2 },
+        { conceptId: 'react.state', retentionQuality: 4 },
+      ]);
+      const newSession = makeSession({ id: 'new-seeded-session-id' });
+      mockPrisma.session.create.mockResolvedValue(newSession);
+      mockPrisma.sessionMessage.create.mockResolvedValue({});
+
+      await service.startSession(LEARNER_ID, {
+        topic: 'React hooks',
+        prior_knowledge_signal: 'beginner',
+        time_available_minutes: 30,
+      });
+
+      const setCalls = mockRedisService.set.mock.calls as unknown as Array<[string, string, number]>;
+      const insightsSetCall = setCalls.find(([key]) => key === `dersify:insights:${newSession.id}`);
+      expect(insightsSetCall).toBeDefined();
+      const savedInsights = JSON.parse(insightsSetCall![1]) as {
+        struggleSignals: number;
+        conceptsEngaged: string[];
+      };
+      // retentionQuality 1 and 2 count as struggles (<=2)
+      expect(savedInsights.struggleSignals).toBe(2);
+      expect(savedInsights.conceptsEngaged).toContain('react.hooks');
     });
 
     it('skips activation phase for first session on topic (no prior knowledge states)', async () => {
@@ -366,6 +446,44 @@ describe('SessionService', () => {
       await expect(
         service.sendMessage(LEARNER_ID, SESSION_ID, { content: 'Hello' }),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('updates session.focusState in DB after each message', async () => {
+      mockPrisma.session.findUnique.mockResolvedValue(makeSession({ exchangesCount: 1 }));
+      mockPrisma.sessionMessage.findMany.mockResolvedValue([]);
+      mockPrisma.session.update.mockResolvedValue(makeSession({ exchangesCount: 2 }));
+
+      await service.sendMessage(LEARNER_ID, SESSION_ID, { content: 'Hello' });
+
+      // Verify that session.update is called with a valid focusState
+      const updateCalls = mockPrisma.session.update.mock.calls as unknown as Array<
+        [{ where: { id: string }; data: { focusState?: string } }]
+      >;
+      const updateWithFocusState = updateCalls.find(
+        ([args]) => args.where.id === SESSION_ID && 'focusState' in args.data,
+      );
+      expect(updateWithFocusState).toBeDefined();
+      expect(['focus', 'diffuse', 'fatigued', 'warming_up']).toContain(
+        updateWithFocusState![0].data.focusState,
+      );
+    });
+
+    it('appends responseTimeMs to SessionInsights.responseTimes on each message', async () => {
+      const existingInsights = {
+        ...initSessionInsights('beginner'),
+        responseTimes: [1000, 1200],
+      };
+      mockRedisService.get.mockResolvedValue(JSON.stringify(existingInsights));
+      mockPrisma.session.findUnique.mockResolvedValue(makeSession({ exchangesCount: 3 }));
+      mockPrisma.sessionMessage.findMany.mockResolvedValue([]);
+
+      await service.sendMessage(LEARNER_ID, SESSION_ID, { content: 'Got it' });
+
+      const setCalls = mockRedisService.set.mock.calls as unknown as Array<[string, string, number]>;
+      const lastSetCall = setCalls.at(-1);
+      expect(lastSetCall).toBeDefined();
+      const savedInsights = JSON.parse(lastSetCall![1]) as { responseTimes: number[] };
+      expect(savedInsights.responseTimes).toHaveLength(3); // 2 existing + 1 new
     });
 
     it('triggers phase transition to consolidation at 85% of time', async () => {

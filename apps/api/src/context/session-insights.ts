@@ -1,5 +1,7 @@
 import type { SessionMode } from './mode-shifts';
 
+export type FocusState = 'focus' | 'diffuse' | 'fatigued' | 'warming_up';
+
 export type SessionSignal =
   | { type: 'struggle'; concept: string; severity: 1 | 2 | 3 }
   | { type: 'misconception'; concept: string; description: string }
@@ -44,6 +46,8 @@ export interface SessionInsights {
   selfReportedLevel: string;
   demonstratedLevel: number;
   calibrationDelta: number;
+
+  focusState: FocusState;
 }
 
 export function initSessionInsights(selfReportedLevel: string): SessionInsights {
@@ -71,6 +75,8 @@ export function initSessionInsights(selfReportedLevel: string): SessionInsights 
     selfReportedLevel,
     demonstratedLevel: 0,
     calibrationDelta: 0,
+
+    focusState: 'warming_up',
   };
 }
 

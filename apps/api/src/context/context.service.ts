@@ -6,6 +6,7 @@ import { ContextBudgetManager } from './context-budget.manager';
 import { MOTIVATION_FRAMING } from './motivation-framing';
 import { MODE_INSTRUCTIONS } from './mode-shifts';
 import { SessionInsights } from './session-insights';
+import { buildFocusInstruction } from '../session/focus-heuristic';
 
 export interface ContextResult {
   systemPrompt: string;
@@ -138,15 +139,25 @@ export class ContextService {
         ? insights.conceptsConfirmed.join(', ')
         : 'None yet';
 
-    return [
+    const focusState = insights.focusState ?? 'focus';
+    const focusInstruction = buildFocusInstruction(focusState);
+
+    const lines = [
       `CURRENT SESSION STATE:`,
       `Mode: ${insights.currentMode} — ${modeInstruction}`,
       `Phase: ${insights.currentPhase}`,
+      `Focus state: ${focusState}`,
       `Struggle ratio this session: ${insights.struggleSignals} struggles, ${insights.momentumSignals} momentum signals`,
       `New misconceptions this session (not yet in permanent model):`,
       newMisconceptions,
       `Concepts confirmed this session: ${confirmedThisSession}`,
-    ].join('\n');
+    ];
+
+    if (focusInstruction) {
+      lines.splice(4, 0, `Focus instruction: ${focusInstruction}`);
+    }
+
+    return lines.join('\n');
   }
 
   private buildRules(): string {

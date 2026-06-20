@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { Prisma, Session, SessionMessage } from '@dersify/database';
+import { ErrorEvent, Prisma, Session, SessionMessage } from '@dersify/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { AiUnavailableException } from '../ai/exceptions/ai-unavailable.exception';
@@ -40,6 +40,7 @@ import {
   PostSessionSummary,
   PostSessionSummarySchema,
 } from '../ai/prompts/post-session-summary.prompt';
+import { detectFocusState } from './focus-heuristic';
 import { StartSessionDto } from './dto/start-session.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 
@@ -94,7 +95,7 @@ export type ResumeType = 'continue' | 'smart' | 'new';
 
 export interface StartSessionResult {
   sessionId: string;
-  openingMessage: string;
+  openingMessage: string | null;
   phase: string;
   resumeType: ResumeType;
   conceptsDue: string[];
@@ -156,7 +157,7 @@ export class SessionService {
       const ageMs = Date.now() - latestSession.lastActivityAt.getTime();
 
       if (ageMs < TRUE_RESUME_WINDOW_MS && !latestSession.endedAt) {
-        return this.buildTrueResumeResult(latestSession, learnerId, dto.topic);
+        return this.buildTrueResumeResult(latestSession);
       }
 
       if (ageMs < SMART_RESUME_WINDOW_MS) {
@@ -286,6 +287,18 @@ export class SessionService {
 
     updatedInsights = { ...updatedInsights, currentPhase: newPhase };
 
+    // Append response time and compute focus state
+    const responseTimeMs = Date.now() - session.lastActivityAt.getTime();
+    const newResponseTimes = [...updatedInsights.responseTimes, responseTimeMs];
+    updatedInsights = { ...updatedInsights, responseTimes: newResponseTimes };
+
+    const newFocusState = detectFocusState({
+      messageCount: newExchangesCount,
+      responseTimes: newResponseTimes,
+      qualityTrend: updatedInsights.calibrationDelta,
+    });
+    updatedInsights = { ...updatedInsights, focusState: newFocusState };
+
     // Save user message + AI response + update session atomically
     const nextUserTurnIndex = (orderedMessages[orderedMessages.length - 1]?.turnIndex ?? -1) + 1;
     const nextAiTurnIndex = nextUserTurnIndex + 1;
@@ -315,6 +328,7 @@ export class SessionService {
           currentMode: newMode,
           currentPhase: newPhase,
           tokenBudgetUsed: newTokenBudgetUsed,
+          focusState: newFocusState,
         },
       }),
     ]);
@@ -647,17 +661,32 @@ export class SessionService {
 
   private async buildTrueResumeResult(
     session: Session,
-    _learnerId: string,
-    _topic: string,
   ): Promise<StartSessionResult> {
-    const lastMessage = await this.prisma.sessionMessage.findFirst({
-      where: { sessionId: session.id, role: 'assistant' },
-      orderBy: { turnIndex: 'desc' },
-    });
+    const [allMessages, cachedRaw] = await Promise.all([
+      this.prisma.sessionMessage.findMany({
+        where: { sessionId: session.id },
+        orderBy: { turnIndex: 'asc' },
+      }),
+      this.redisService.get(insightsKey(session.id)).catch(() => null),
+    ]);
+
+    if (!cachedRaw) {
+      // Redis expired — rebuild approximate insights from error_events
+      const errorEvents: ErrorEvent[] = await this.prisma.errorEvent.findMany({
+        where: { sessionId: session.id },
+      });
+      const rebuiltInsights = initSessionInsights(session.priorKnowledgeSignal);
+      const struggledEvents = errorEvents.filter((e: ErrorEvent) => e.retentionQuality <= 2);
+      rebuiltInsights.struggleSignals = struggledEvents.length;
+      rebuiltInsights.conceptsEngaged = [...new Set(errorEvents.map((e: ErrorEvent) => e.conceptId))];
+      await this.saveInsights(session.id, rebuiltInsights);
+    }
+
+    const lastAssistantMsg = [...allMessages].reverse().find((m) => m.role === 'assistant');
 
     return {
       sessionId: session.id,
-      openingMessage: lastMessage?.content ?? 'Welcome back — picking up where you left off.',
+      openingMessage: lastAssistantMsg?.content ?? null,
       phase: session.currentPhase,
       resumeType: 'continue',
       conceptsDue: [],
@@ -684,13 +713,75 @@ export class SessionService {
       }
     }
 
+    // Close old session if still open
+    if (!session.endedAt) {
+      await this.prisma.session.update({
+        where: { id: session.id },
+        data: { endedAt: new Date() },
+      });
+      void this.consolidationQueue
+        .add(
+          'consolidate',
+          {
+            sessionId: session.id,
+            learnerId,
+            topic,
+            calibrationDelta: 0,
+            conceptsEngaged: session.conceptsCovered,
+          },
+          { attempts: 3, backoff: { type: 'exponential', delay: 2000 } },
+        )
+        .catch((err: unknown) =>
+          this.logger.warn('smart_resume_consolidation_enqueue_failed', {
+            sessionId: session.id,
+            reason: String(err),
+          }),
+        );
+      void this.redisService
+        .del(insightsKey(session.id))
+        .catch(() => {});
+    }
+
+    // Seed new session insights from old session error_events
+    const errorEvents: ErrorEvent[] = await this.prisma.errorEvent.findMany({
+      where: { sessionId: session.id },
+    });
+    const newInsights = initSessionInsights(session.priorKnowledgeSignal);
+    const struggledEvents = errorEvents.filter((e: ErrorEvent) => e.retentionQuality <= 2);
+    newInsights.struggleSignals = struggledEvents.length;
+    newInsights.conceptsEngaged = [...new Set(errorEvents.map((e: ErrorEvent) => e.conceptId))];
+
+    // Create new session inheriting topic + prior knowledge signal
+    const newSession = await this.prisma.session.create({
+      data: {
+        learnerId,
+        topic,
+        priorKnowledgeSignal: session.priorKnowledgeSignal,
+        timeAvailableMinutes: session.timeAvailableMinutes,
+        currentPhase: 'activation',
+      },
+    });
+
+    await this.saveInsights(newSession.id, newInsights);
+
     const dueStates = await this.learnerService.getDueConceptsForTopic(learnerId, topic);
     const dueConceptNames = dueStates.map((s) => s.conceptId);
 
+    const openingMessage = `Last time we covered: ${summary}\n\nReady to continue? Or would you like to revisit anything from last time?`;
+
+    await this.prisma.sessionMessage.create({
+      data: {
+        sessionId: newSession.id,
+        role: 'assistant',
+        content: openingMessage,
+        turnIndex: 0,
+      },
+    });
+
     return {
-      sessionId: session.id,
-      openingMessage: `Last session summary: ${summary}\n\nReady to continue?`,
-      phase: session.currentPhase,
+      sessionId: newSession.id,
+      openingMessage,
+      phase: 'activation',
       resumeType: 'smart',
       conceptsDue: dueConceptNames.slice(0, 2),
     };
