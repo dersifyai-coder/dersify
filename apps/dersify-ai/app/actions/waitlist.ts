@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
 
 // Simple in-memory rate limiting per IP (resets on server restart)
-// For production, use Redis — but this prevents most abuse
+// For production, use Redis - but this prevents most abuse
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const RATE_LIMIT_MAX = 3; // max 3 submissions per IP per 15 min window
@@ -95,7 +95,7 @@ export async function joinWaitlist(
     };
   }
 
-  // Optional confirmation email via Resend — only runs if configured.
+  // Optional confirmation email via Resend - only runs if configured.
   if (process.env.RESEND_API_KEY) {
     try {
       const { Resend } = await import('resend');
@@ -105,22 +105,22 @@ export async function joinWaitlist(
         to: email,
         subject: "You're on the Dersify waitlist!",
         html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 40px; background: #0A1628; color: white; border-radius: 12px;">
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 40px; background: #FBFCFB; color: #131815; border: 1px solid rgba(19,24,21,0.10); border-radius: 16px;">
             <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 16px;">You're on the list.</h1>
-            <p style="color: #9CA3AF; font-size: 16px; line-height: 1.6;">
+            <p style="color: #515852; font-size: 16px; line-height: 1.6;">
               Thanks for joining the Dersify waitlist. We're putting the finishing touches on
               an AI learning system that actually remembers you, adapts to you, and teaches
               you exactly what you need.
             </p>
-            <p style="color: #9CA3AF; font-size: 16px; line-height: 1.6; margin-top: 16px;">
+            <p style="color: #515852; font-size: 16px; line-height: 1.6; margin-top: 16px;">
               When we're ready, you'll be among the first to know.
             </p>
-            <p style="color: #0D9488; font-size: 14px; margin-top: 32px;">— The Dersify team</p>
+            <p style="color: #0F7A45; font-size: 14px; margin-top: 32px;">- The Dersify team</p>
           </div>
         `,
       });
     } catch (emailError) {
-      // Never fail the signup because of email error — just log
+      // Never fail the signup because of email error - just log
       console.error('[waitlist] confirmation email failed:', emailError);
     }
   }

@@ -1,0 +1,49 @@
+/* ============================================================
+   Dersify — Typography
+   A single premium grotesk does the whole system:
+   Hanken Grotesk for display, UI, and body — tight + heavy
+   (800) for hero display, calm (400–600) for prose and UI.
+   IBM Plex Mono for data, stats, and knowledge-map labels.
+   Editorial discipline, modern SaaS clarity.
+   ============================================================ */
+
+:root {
+  /* Families */
+  --font-display: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans:    'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Weights */
+  --weight-regular:   400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-bold:      700;
+  --weight-extrabold: 800;
+
+  /* Type scale — size / line-height pairs (xs → 4xl + display) */
+  --text-xs:      0.75rem;    /* 12 */
+  --text-xs-lh:   1.5;
+  --text-sm:      0.875rem;   /* 14 */
+  --text-sm-lh:   1.5;
+  --text-base:    1rem;       /* 16 */
+  --text-base-lh: 1.6;
+  --text-lg:      1.125rem;   /* 18 */
+  --text-lg-lh:   1.6;
+  --text-xl:      1.25rem;    /* 20 */
+  --text-xl-lh:   1.5;
+  --text-2xl:     1.5rem;     /* 24 */
+  --text-2xl-lh:  1.35;
+  --text-3xl:     2rem;       /* 32 */
+  --text-3xl-lh:  1.2;
+  --text-4xl:     2.75rem;    /* 44 */
+  --text-4xl-lh:  1.08;
+  --text-display: 4.25rem;    /* 68 — marketing hero */
+  --text-display-lh: 1.02;
+
+  /* Tracking */
+  --tracking-tighter: -0.035em;  /* hero display */
+  --tracking-tight:   -0.022em;  /* headings */
+  --tracking-snug:    -0.012em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.08em;    /* eyebrows / mono labels */
+}

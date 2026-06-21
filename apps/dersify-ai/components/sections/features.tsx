@@ -58,7 +58,7 @@ export function Features() {
           className="text-center text-[12.5px] font-semibold uppercase tracking-[0.08em]"
           style={{ color: 'var(--accent)' }}
         >
-          Features
+          Use cases
         </p>
         <h2
           className="mx-auto mt-4 max-w-[640px] text-center"
@@ -71,7 +71,7 @@ export function Features() {
             color: 'var(--text-primary)',
           }}
         >
-          Everything that makes real understanding possible.
+          Built for the way self-learners actually study.
         </h2>
 
         <div className="mt-14 grid grid-cols-1 gap-5 lg:grid-cols-12">
@@ -82,11 +82,11 @@ export function Features() {
               className="mt-4 text-[22px] font-semibold"
               style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}
             >
-              It teaches through conversation.
+              Learn through a real back-and-forth.
             </h3>
             <p className="mt-2 max-w-[480px] text-[15px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Dersify doesn&apos;t ask you to fill in blanks. It engages you in real
-              dialogue — explaining, questioning, correcting, and adapting.
+              Dersify does not hand you a static lesson. It explains, asks,
+              corrects, and changes approach based on how you respond.
             </p>
             <div className="mt-6 flex max-w-[420px] flex-col gap-2 text-[13px]">
               <div
@@ -113,11 +113,11 @@ export function Features() {
           <FeatureCard className="lg:col-span-5" delay={0.08}>
             <Globe size={28} style={{ color: 'var(--accent)' }} />
             <h3 className="mt-4 text-xl font-semibold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-              Any subject. Any level.
+              Any topic you can name.
             </h3>
             <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              From quantum mechanics to contract law. Dersify doesn&apos;t know the
-              phrase &ldquo;outside my scope.&rdquo;
+              Programming, business, math, writing, languages, exams, or a concept
+              from a video you watched at midnight.
             </p>
             <div className="mt-6 h-[88px] overflow-hidden">
               <div className="animate-tag-scroll flex w-max flex-col gap-2">
@@ -142,11 +142,11 @@ export function Features() {
           <FeatureCard className="lg:col-span-4">
             <CalendarClock size={28} style={{ color: 'var(--accent)' }} />
             <h3 className="mt-4 text-xl font-semibold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-              Reviews when you&apos;re about to forget.
+              Review before you forget.
             </h3>
             <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              FSRS spaced repetition schedules each concept precisely — not once a week,
-              but exactly when your memory is about to slip.
+              FSRS spaced repetition helps schedule each concept when memory is
+              likely to slip, not on a generic calendar.
             </p>
             <ForgettingCurve />
           </FeatureCard>
@@ -154,11 +154,11 @@ export function Features() {
           <FeatureCard className="lg:col-span-4" delay={0.08}>
             <Crosshair size={28} style={{ color: 'var(--warning)' }} />
             <h3 className="mt-4 text-xl font-semibold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-              Finds gaps you didn&apos;t know you had.
+              Find the gap behind the confusion.
             </h3>
             <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Dersify detects 6 types of misconceptions — terminology, false analogies,
-              causal inversions. Then fixes them with targeted remediation.
+              Dersify detects different kinds of misconceptions, then uses a
+              correction strategy matched to the mistake.
             </p>
           </FeatureCard>
 
@@ -168,7 +168,7 @@ export function Features() {
               Learn from your own materials.
             </h3>
             <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Upload PDFs, paste URLs, or add YouTube videos. Dersify grounds
+              Upload PDFs, paste URLs, or add YouTube videos. Dersify can ground
               explanations in your materials while filling gaps with its own knowledge.
             </p>
             <div className="mt-6 flex gap-2">
@@ -192,11 +192,11 @@ export function Features() {
           <FeatureCard className="lg:col-span-5">
             <BarChart3 size={28} style={{ color: 'var(--accent)' }} />
             <h3 className="mt-4 text-[22px] font-semibold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-              Know exactly what you know.
+              See what is solid and what is shaky.
             </h3>
             <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              A real-time forgetting curve map. No XP. No streaks. Just an honest picture
-              of what&apos;s solid, what&apos;s slipping, and what&apos;s due for review.
+              A personalized memory map. No noisy gamification. Just an honest
+              picture of what is solid, what is slipping, and what needs review.
             </p>
             <div className="mt-6 space-y-3">
               {PROGRESS_TOPICS.map((topic) => (
@@ -232,11 +232,11 @@ export function Features() {
           <FeatureCard className="lg:col-span-7" delay={0.08}>
             <Activity size={28} style={{ color: 'var(--accent-2)' }} />
             <h3 className="mt-4 text-[22px] font-semibold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-              The AI reads the room.
+              The tutor notices when your focus changes.
             </h3>
             <p className="mt-2 max-w-[520px] text-[15px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Dersify detects when you&apos;re fatigued, in flow, or confused. It shifts
-              modes — rescue, acceleration, consolidation — invisibly, in real-time.
+              Dersify detects when you are confused, moving quickly, or getting
+              tired. It shifts pace without making you manage the system.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-3">
               {MODES.map((mode, i) => (

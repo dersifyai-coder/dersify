@@ -5,15 +5,15 @@ import { Pencil, Brain, Sparkles, type LucideIcon } from 'lucide-react';
 import { EASE } from '@/lib/utils';
 
 const KNOWLEDGE_BARS = [
-  { name: "Porter's Five Forces", pct: 80, color: 'var(--accent)' },
-  { name: 'Competitive Advantage', pct: 45, color: 'var(--warning)' },
-  { name: 'VRIN Framework', pct: 15, color: 'var(--accent-2)' },
+  { name: 'React state', pct: 82, color: 'var(--accent)' },
+  { name: 'Async effects', pct: 46, color: 'var(--warning)' },
+  { name: 'Closures', pct: 24, color: 'var(--accent-2)' },
 ];
 
 const PROMPT_LINES = [
-  'profile → learning style, pace',
-  'history → 18 concepts, 1 gap',
-  'today → review DI before new material',
+  'profile -> motivation, pace, struggle response',
+  'history -> 18 concepts, 3 shaky areas',
+  'today -> review closures before new React work',
 ];
 
 function StepCard({
@@ -97,7 +97,7 @@ export function HowItWorks() {
             color: 'var(--text-primary)',
           }}
         >
-          Tutoring, not content delivery.
+          From scattered resources to a tutor that knows your path.
         </h2>
 
         <div className="mt-14 grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -105,11 +105,11 @@ export function HowItWorks() {
             index={0}
             number="01"
             Icon={Pencil}
-            title="You bring the topic"
-            body="Tell Dersify what you want to learn — a skill, a subject, a concept. Any topic. Any level. In any language."
+            title="Bring what you are trying to learn"
+            body="Start with a skill, a course topic, a project goal, a PDF, a URL, or a YouTube lecture. Dersify turns your materials into a personal learning session."
           >
             <div className="flex flex-wrap gap-2">
-              {['React hooks', "Porter's Five Forces", 'Organic chemistry'].map((t) => (
+              {['React hooks', 'Linear algebra', 'IELTS writing'].map((t) => (
                 <span
                   key={t}
                   className="rounded-full px-3 py-1 text-xs font-medium"
@@ -125,8 +125,8 @@ export function HowItWorks() {
             index={1}
             number="02"
             Icon={Brain}
-            title="It maps what you know"
-            body="Dersify tracks every concept — confirmed, shaky, or about to be forgotten. Your knowledge map gets sharper with every session."
+            title="It finds your current position"
+            body="Before teaching, Dersify asks what you already understand, what is shaky, and where your intuition breaks. The map gets sharper with every session."
           >
             <div className="space-y-3">
               {KNOWLEDGE_BARS.map((bar) => (
@@ -157,8 +157,8 @@ export function HowItWorks() {
             index={2}
             number="03"
             Icon={Sparkles}
-            title="Every session gets smarter"
-            body="Before your first message, Dersify knows your learning style, your misconceptions, your calibration score, and exactly which concepts are slipping."
+            title="The relationship compounds"
+            body="Every exchange updates your learner model: pace, misconceptions, confidence, memory strength, and the next concept you are ready for."
           >
             <div className="space-y-2">
               {PROMPT_LINES.map((line, i) => (

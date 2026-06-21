@@ -1,195 +1,302 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { Check } from 'lucide-react';
 import { EASE } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-
-function scrollTo(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-}
+import { WaitlistForm } from '@/components/ui/waitlist-form';
 
 const fade = (delay: number) => ({
-  initial: { opacity: 0, y: 16 },
+  initial: { opacity: 0, y: 14 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5, ease: EASE, delay },
+  transition: { duration: 0.48, ease: EASE, delay },
 });
 
-const HERO_NODES = [
-  { name: 'Vectors',        x: 12, y: 30, mastery: 100, state: 'mastered' as const },
-  { name: 'Linear maps',    x: 12, y: 74, mastery: 100, state: 'mastered' as const },
-  { name: 'Eigenvectors',   x: 50, y: 52, mastery: 64,  state: 'active'   as const },
-  { name: 'Diagonalization',x: 86, y: 28, mastery: 0,   state: 'locked'   as const },
-  { name: 'SVD',            x: 86, y: 76, mastery: 0,   state: 'locked'   as const },
+const CONCEPTS = [
+  { label: 'Variables', value: 100, state: 'mastered' },
+  { label: 'Loops', value: 64, state: 'learning now' },
+  { label: 'Async flow', value: 0, state: 'unlocks next' },
 ];
 
-function MasteryArc({ value, size, thickness }: { value: number; size: number; thickness: number }) {
-  const r = (size - thickness) / 2;
-  const c = 2 * Math.PI * r;
-  const complete = value >= 100;
+function MasteryRing({ value, size = 34 }: { value: number; size?: number }) {
+  const thickness = 3;
+  const radius = (size - thickness) / 2;
+  const circumference = 2 * Math.PI * radius;
+
   return (
-    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border-default)" strokeWidth={thickness} />
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
       <circle
-        cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke={complete ? 'var(--accent-2)' : 'var(--accent)'}
-        strokeWidth={thickness} strokeLinecap="round"
-        strokeDasharray={c} strokeDashoffset={c * (1 - value / 100)}
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="var(--border-default)"
+        strokeWidth={thickness}
+      />
+      <motion.circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke={value >= 85 ? 'var(--accent-2)' : 'var(--accent)'}
+        strokeWidth={thickness}
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        initial={{ strokeDashoffset: circumference }}
+        animate={{ strokeDashoffset: circumference * (1 - value / 100) }}
+        transition={{ duration: 0.85, ease: EASE, delay: 0.55 }}
+        style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }}
       />
     </svg>
   );
 }
 
-function HeroMap() {
-  const sz = 30, th = 3;
+function HeroProof() {
   return (
-    <div
-      className="relative mx-auto mt-14 hidden sm:block"
-      style={{ maxWidth: 880, height: 190 }}
-      aria-hidden
+    <motion.div
+      {...fade(0.18)}
+      className="relative overflow-hidden rounded-[30px] p-5 sm:p-6"
+      style={{
+        background: 'linear-gradient(180deg, var(--accent-soft), transparent 42%), var(--bg-surface)',
+        border: '1px solid var(--border-default)',
+        boxShadow: 'var(--shadow-xl), var(--highlight-top)',
+      }}
     >
-      <svg
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-        viewBox="0 0 880 190"
-        preserveAspectRatio="none"
-      >
-        <path d="M150 57 C 330 57, 330 99, 440 99" stroke="var(--border-strong)" strokeWidth="1.5" fill="none" />
-        <path d="M150 140 C 330 140, 330 99, 440 99" stroke="var(--border-strong)" strokeWidth="1.5" fill="none" />
-        <path d="M440 99 C 640 99, 640 53, 756 53" stroke="var(--accent)" strokeWidth="1.5" fill="none" strokeDasharray="5 5" />
-        <path d="M440 99 C 640 99, 640 144, 756 144" stroke="var(--accent)" strokeWidth="1.5" fill="none" strokeDasharray="5 5" />
-      </svg>
-      {HERO_NODES.map((n, i) => {
-        const isLocked = n.state === 'locked';
-        const isActive = n.state === 'active';
-        return (
-          <div
-            key={i}
-            style={{
-              position: 'absolute',
-              left: `${n.x}%`,
-              top: `${n.y}%`,
-              transform: 'translate(-50%,-50%)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '6px 14px 6px 6px',
-              background: isActive
-                ? 'linear-gradient(180deg, var(--accent-soft), transparent), var(--bg-surface)'
-                : 'var(--bg-surface)',
-              border: `1px solid ${isActive ? 'var(--accent-soft-border)' : 'var(--border-default)'}`,
-              borderRadius: 'var(--radius-full)',
-              boxShadow: isActive ? 'var(--glow-accent)' : 'var(--shadow-md)',
-              opacity: isLocked ? 0.5 : 1,
-              whiteSpace: 'nowrap',
-            }}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.5]"
+        style={{
+          backgroundImage:
+            'linear-gradient(var(--border-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px)',
+          backgroundSize: '50px 50px',
+        }}
+        aria-hidden
+      />
+
+      <div className="relative flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[12px] font-semibold" style={{ color: 'var(--text-accent)' }}>
+            Tutor memory on
+          </p>
+          <h2
+            className="mt-2 text-[28px] font-semibold leading-[1.05] tracking-[-0.02em]"
+            style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
           >
-            {isLocked ? (
-              <span
+            Programming
+            <br />
+            fundamentals
+          </h2>
+        </div>
+        <span
+          className="rounded-full px-3 py-1 text-[12px] font-semibold"
+          style={{ background: 'var(--accent-soft)', color: 'var(--text-accent)' }}
+        >
+          active
+        </span>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.42, ease: EASE, delay: 0.3 }}
+        className="relative mt-5 rounded-[22px] p-4"
+        style={{
+          background: 'var(--bg-raised)',
+          border: '1px solid var(--border-default)',
+          boxShadow: 'var(--shadow-md), var(--highlight-top)',
+        }}
+      >
+        <p className="text-[12px] font-semibold" style={{ color: 'var(--text-accent)' }}>
+          Persistent learner memory
+        </p>
+        <p className="mt-2 max-w-[520px] text-[15px] font-semibold leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+          Dersify carries your history into the next lesson, so the tutor starts from what you already tried.
+        </p>
+      </motion.div>
+
+      <div
+        className="relative mt-4 rounded-[22px] p-4"
+        style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-default)',
+          boxShadow: 'var(--shadow-md), var(--highlight-top)',
+        }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
+              Connected map
+            </p>
+            <p className="text-[15px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+              Loops before async flow
+            </p>
+          </div>
+          <span className="rounded-full px-3 py-1 text-[12px] font-semibold" style={{ background: 'var(--accent-soft)', color: 'var(--text-accent)' }}>
+            64%
+          </span>
+        </div>
+
+        <div className="mt-4 grid gap-2">
+          {CONCEPTS.map((concept, index) => {
+            const active = concept.label === 'Loops';
+            const locked = concept.value === 0;
+
+            return (
+              <motion.div
+                key={concept.label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.42, ease: EASE, delay: 0.42 + index * 0.07 }}
+                className="flex items-center justify-between rounded-2xl px-3.5 py-2.5"
                 style={{
-                  width: sz, height: sz, borderRadius: '50%',
-                  background: 'var(--bg-subtle)',
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
+                  background: active ? 'var(--accent-soft)' : 'var(--bg-subtle)',
+                  border: active ? '1px solid var(--accent-soft-border)' : '1px solid var(--border-subtle)',
+                  color: locked ? 'var(--text-muted)' : 'var(--text-primary)',
                 }}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="5" y="11" width="14" height="9" rx="2" />
-                  <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-                </svg>
-              </span>
-            ) : (
-              <MasteryArc value={n.mastery} size={sz} thickness={th} />
-            )}
-            <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: '-0.01em', color: isLocked ? 'var(--text-muted)' : 'var(--text-primary)' }}>
-              {n.name}
-            </span>
-          </div>
-        );
-      })}
-    </div>
+                <div className="flex items-center gap-3">
+                  <MasteryRing value={concept.value} />
+                  <div>
+                    <p className="text-[14px] font-semibold">{concept.label}</p>
+                    <p className="text-[12px]" style={{ color: active ? 'var(--text-accent)' : 'var(--text-muted)' }}>
+                      {concept.state}
+                    </p>
+                  </div>
+                </div>
+                {active ? (
+                  <span className="text-[12px] font-semibold" style={{ color: 'var(--text-accent)' }}>
+                    next
+                  </span>
+                ) : !locked ? (
+                  <Check size={17} style={{ color: 'var(--accent-2)' }} />
+                ) : (
+                  <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
+                    later
+                  </span>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.42, ease: EASE, delay: 0.64 }}
+          className="mt-3 rounded-2xl px-4 py-3"
+          style={{
+            background: 'var(--bg-inverse)',
+            border: '1px solid var(--bg-inverse)',
+            boxShadow: 'var(--shadow-md)',
+          }}
+        >
+          <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.62)' }}>
+            next move from memory
+          </p>
+          <p className="mt-1 text-[13px] font-semibold leading-relaxed" style={{ color: 'var(--accent-contrast)' }}>
+            Start with yesterday's loop mistake, then unlock async flow.
+          </p>
+        </motion.div>
+      </div>
+    </motion.div>
   );
 }
 
 export function Hero() {
   return (
     <section
-      className="relative overflow-hidden pt-32 pb-4"
+      className="relative overflow-hidden px-4 pb-12 pt-28 sm:px-6 lg:pb-14 lg:pt-30"
       style={{
-        background: 'radial-gradient(120% 60% at 50% -10%, rgba(15,122,69,0.08) 0%, transparent 55%)',
+        background:
+          'radial-gradient(circle at 70% 8%, rgba(15,122,69,0.12), transparent 38%), linear-gradient(180deg, var(--bg-base), var(--bg-subtle))',
       }}
     >
-      <div className="mx-auto max-w-[1200px] px-6 text-center lg:px-12">
-        <motion.span
-          {...fade(0)}
-          className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-semibold"
-          style={{
-            background: 'var(--accent-soft)',
-            border: '1px solid var(--accent-soft-border)',
-            color: 'var(--accent)',
-          }}
-        >
-          <span className="animate-pulse-dot h-1.5 w-1.5 rounded-full" style={{ background: 'var(--accent)' }} />
-          An AI tutor that remembers how you learn
-        </motion.span>
-
-        <motion.h1
-          {...fade(0.1)}
-          className="mx-auto mt-7 max-w-[820px]"
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(2.5rem, 5.5vw, 3.75rem)',
-            fontWeight: 500,
-            letterSpacing: '-0.03em',
-            lineHeight: 1.05,
-            color: 'var(--text-primary)',
-          }}
-        >
-          Learn anything,{' '}
-          <br className="hidden sm:block" />
-          <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>the way you think.</em>
-        </motion.h1>
-
-        <motion.p
-          {...fade(0.2)}
-          className="mx-auto mt-6 max-w-[600px] text-xl leading-relaxed"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          No pre-built courses. Bring any topic — Dersify maps it to how your mind works
-          and teaches through real conversation, not lectures.
-        </motion.p>
-
-        <motion.div {...fade(0.3)} className="mt-8 flex flex-wrap justify-center gap-3">
-          <Button variant="primary" size="lg" onClick={() => scrollTo('waitlist')}>
-            Start with any topic
-          </Button>
-          <Button variant="secondary" size="lg" onClick={() => scrollTo('how-it-works')}>
-            See the method
-          </Button>
-        </motion.div>
-
-        <motion.p
-          {...fade(0.4)}
-          className="mt-4 text-[13px]"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          Free to start · no credit card
-        </motion.p>
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, ease: EASE, delay: 0.5 }}
-        className="mx-auto max-w-[1200px] px-6 lg:px-12"
-      >
-        <HeroMap />
-      </motion.div>
-
-      {/* bottom fade to page bg */}
       <div
-        className="pointer-events-none mt-8 h-16"
-        style={{ background: 'linear-gradient(to bottom, transparent, var(--bg-base))' }}
+        className="pointer-events-none absolute inset-0 opacity-[0.5]"
+        style={{
+          backgroundImage:
+            'linear-gradient(var(--border-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px)',
+          backgroundSize: '72px 72px',
+        }}
         aria-hidden
       />
+
+      <div className="relative mx-auto grid max-w-[1200px] items-center gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:gap-12">
+        <div className="max-w-[590px] text-left">
+          <motion.span
+            {...fade(0)}
+            className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-semibold"
+            style={{
+              background: 'var(--accent-soft)',
+              border: '1px solid var(--accent-soft-border)',
+              color: 'var(--text-accent)',
+            }}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--accent)' }} />
+            For self-learners stuck between videos, courses, docs, and chat
+          </motion.span>
+
+          <motion.h1
+            {...fade(0.08)}
+            className="mt-6"
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(3rem, 5.1vw, 4.8rem)',
+              fontWeight: 700,
+              letterSpacing: '-0.035em',
+              lineHeight: 0.98,
+              color: 'var(--text-primary)',
+            }}
+          >
+            Stop restarting every time you study.
+          </motion.h1>
+
+          <motion.p
+            {...fade(0.16)}
+            className="mt-6 max-w-[560px] text-lg leading-relaxed sm:text-xl"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            YouTube, Coursera, Udemy, docs, and ChatGPT can explain. Dersify is an
+            AI-native learning system that understands how you learn, remembers your
+            progress, identifies misconceptions, and helps you master anything.
+          </motion.p>
+
+          <motion.p
+            {...fade(0.22)}
+            className="mt-4 max-w-[520px] text-[15px] font-semibold leading-relaxed"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Bring any topic. Dersify turns it into a learning map that remembers you.
+          </motion.p>
+
+          <motion.div
+            {...fade(0.3)}
+            className="mt-7 max-w-[620px] rounded-[22px] p-2"
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-default)',
+              boxShadow: 'var(--shadow-lg), var(--highlight-top)',
+            }}
+          >
+            <WaitlistForm
+              source="hero"
+              size="large"
+              placeholder="Enter your email for early access"
+              buttonLabel="Join waitlist"
+            />
+          </motion.div>
+
+          <motion.div
+            {...fade(0.38)}
+            className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[13px]"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <span>Early access</span>
+            <span>Text-first and low-bandwidth friendly</span>
+            <span>No credit card</span>
+          </motion.div>
+        </div>
+
+        <HeroProof />
+      </div>
     </section>
   );
 }

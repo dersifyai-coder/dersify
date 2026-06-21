@@ -1,0 +1,90 @@
+/* ============================================================
+   Dersify — Color System  (Clean light · Premium emerald)
+   A studious AI-learning tool that feels like Linear/Vercel:
+   a clean near-white canvas, near-black green-tinted ink,
+   and ONE confident emerald used for meaning — progress,
+   mastery, the single true action. Deliberately NOT startup
+   blue, NOT Duolingo neon. Light-first; restrained.
+   ============================================================ */
+
+:root {
+  /* --- Raw palette: Neutrals (cool-neutral, a whisper of green) --- */
+  --n-0:   #FFFFFF;
+  --n-25:  #FBFCFB;   /* page canvas */
+  --n-50:  #F5F7F5;   /* subtle sections, hover fills */
+  --n-100: #ECEFED;
+  --n-150: #E4E8E5;
+  --n-200: #D7DCD8;   /* hairline-strong */
+  --n-300: #BEC5C0;
+  --n-400: #99A19C;   /* disabled */
+  --n-500: #6E756F;   /* muted text */
+  --n-600: #515852;   /* secondary text */
+  --n-700: #3A403B;
+  --n-800: #242926;
+  --n-900: #131815;   /* headings / primary text (faint green-black) */
+  --n-950: #0A0D0B;   /* deepest */
+
+  /* --- Raw palette: Emerald (the one accent) ----------------- */
+  --green-50:   #EFF8F2;
+  --green-100:  #DBF0E3;
+  --green-200:  #B4E1C7;
+  --green-300:  #82CCA4;
+  --green-400:  #45B27B;
+  --green-500:  #0F7A45;   /* PRIMARY accent — AA with white text */
+  --green-600:  #0C6539;   /* hover (darker) */
+  --green-700:  #0A512F;   /* active / deep accent text */
+  --green-800:  #093F26;
+  --green-900:  #0B2E1E;   /* deep forest — dark CTA bands / inverse */
+  --green-bright: #22B26B; /* vivid — charts, active dots, glows only */
+
+  /* ============================================================
+     SEMANTIC ALIASES — reference these in product code
+     ============================================================ */
+
+  /* Backgrounds */
+  --bg-base:        var(--n-25);     /* app / page canvas */
+  --bg-surface:     var(--n-0);      /* cards, panels */
+  --bg-raised:      var(--n-0);      /* popovers, inputs (white + border) */
+  --bg-subtle:      var(--n-50);     /* subtle sections, hover, fills */
+  --bg-overlay:     var(--n-0);      /* dialogs, menus */
+  --bg-inverse:     var(--green-900);/* dark green CTA bands / sidebar */
+  --bg-scrim:       rgba(11, 18, 15, 0.45);
+
+  /* Accents */
+  --accent:             var(--green-500);
+  --accent-hover:       var(--green-600);
+  --accent-active:      var(--green-700);
+  --accent-contrast:    #FFFFFF;             /* text on a green fill */
+  --accent-soft:        rgba(15, 122, 69, 0.10);
+  --accent-soft-border: rgba(15, 122, 69, 0.22);
+  --accent-bright:      var(--green-bright); /* lively detail moments */
+
+  --accent-2:           var(--green-700);    /* deep counterweight */
+  --accent-2-hover:     var(--green-600);
+  --accent-2-soft:      rgba(10, 81, 47, 0.08);
+
+  /* Semantic state colors (muted, confident) */
+  --success:        #15875A;
+  --success-soft:   rgba(21, 135, 90, 0.10);
+  --warning:        #C77D14;
+  --warning-soft:   rgba(199, 125, 20, 0.10);
+  --error:          #D14343;
+  --error-soft:     rgba(209, 67, 67, 0.10);
+  --info:           #2D74C4;
+  --info-soft:      rgba(45, 116, 196, 0.10);
+
+  /* Text scale */
+  --text-primary:   var(--n-900);
+  --text-secondary: var(--n-600);
+  --text-muted:     var(--n-500);
+  --text-disabled:  var(--n-400);
+  --text-on-accent: #FFFFFF;
+  --text-accent:    var(--green-600);   /* green text on light */
+
+  /* Borders */
+  --border-subtle:  rgba(11, 18, 15, 0.05);
+  --border-default: rgba(11, 18, 15, 0.10);
+  --border-strong:  rgba(11, 18, 15, 0.16);
+  --border-focus:   var(--green-500);
+  --focus-ring:     0 0 0 3px rgba(15, 122, 69, 0.20);
+}

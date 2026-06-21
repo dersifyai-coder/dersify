@@ -8,21 +8,39 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary:  "#1B4FDB",
-        teal:     "#0D9488",
-        navy:     "#0A1628",
-        "bg-base":    "#050C1B",
-        "bg-surface": "#0D1A2E",
-        "bg-surface-2": "#0F1F38",
-        "blue-brand": "#2563EB",
-        "cyan-brand": "#06B6D4",
+        primary: "var(--accent)",
+        "bg-base": "var(--bg-base)",
+        "bg-surface": "var(--bg-surface)",
+        "bg-surface-2": "var(--bg-surface-2)",
+        "text-primary": "var(--text-primary)",
+        "text-secondary": "var(--text-secondary)",
+        "text-muted": "var(--text-muted)",
+        "text-subtle": "var(--text-subtle)",
       },
       fontFamily: {
-        sora:  ["var(--font-sora)", "sans-serif"],
-        mono:  ["var(--font-jetbrains-mono)", "monospace"],
+        sans: ["var(--font-sans)", "sans-serif"],
+        mono: ["var(--font-mono)", "monospace"],
+      },
+      borderRadius: {
+        xs: "var(--radius-xs)",
+        sm: "var(--radius-sm)",
+        md: "var(--radius-md)",
+        lg: "var(--radius-lg)",
+        xl: "var(--radius-xl)",
+        "2xl": "var(--radius-2xl)",
       },
       borderColor: {
-        subtle: "rgba(255,255,255,0.07)",
+        subtle: "var(--border-subtle)",
+        default: "var(--border-default)",
+        strong: "var(--border-strong)",
+        focus: "var(--border-focus)",
+      },
+      boxShadow: {
+        sm: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
+        xl: "var(--shadow-xl)",
+        accent: "var(--glow-accent)",
       },
       backgroundImage: {
         "grid-pattern":
@@ -62,8 +80,8 @@ const config: Config = {
           "100%": { transform: "translateX(-50%)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px rgba(59,130,246,0.2)" },
-          "50%":       { boxShadow: "0 0 40px rgba(59,130,246,0.5)" },
+          "0%, 100%": { boxShadow: "0 0 20px rgba(15,122,69,0.2)" },
+          "50%":       { boxShadow: "0 0 40px rgba(15,122,69,0.5)" },
         },
         float: {
           "0%, 100%": { transform: "translateY(0px)" },

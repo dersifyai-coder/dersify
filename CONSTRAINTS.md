@@ -311,10 +311,12 @@ If you have not done all three, do not write a single line of code.
 
 ## 11. Brand Constraints
 
-- Colors defined in `globals.css` as CSS custom properties only. Reference via Tailwind classes.
+- Production brand tokens live in `packages/design-system/tokens/*.css` and `packages/design-system/styles.css`.
+- Primary action/accent is emerald `--accent` (`#0F7A45`); inverse surfaces use `--bg-inverse` (`#0B2E1E`).
+- Colors must be referenced via CSS custom properties or Tailwind token aliases.
 - Never inline hex color values in component files.
 - Fonts loaded once in `apps/web/src/app/layout.tsx` via `next/font/google`. Never add a `<link>` tag for fonts.
-- Gradient direction is always `135deg` from `#1B4FDB` to `#0D9488`.
+- Do not create alternate brand directions outside the production token system.
 
 ---
 

@@ -3,34 +3,34 @@
 import { motion } from 'framer-motion';
 import { EASE } from '@/lib/utils';
 
-const TESTIMONIALS = [
+const LEARNER_TYPES = [
   {
-    quote:
-      "I went from confused to confident in 2 weeks. The AI adapts to how I think. It's like having a personal tutor who never gets tired.",
-    name: 'Ayaan Mohamed',
-    tag: 'Computer science · ALU',
-    chip: 'Mastered data structures in 3 weeks',
+    title: 'Self-taught developers',
+    body:
+      'You are learning programming from docs, YouTube, Stack Overflow, and projects. Dersify helps connect the pieces and remembers where you got stuck.',
+    tag: 'Programming / projects',
+    chip: 'Turn scattered resources into a learning path',
     prominent: false,
   },
   {
-    quote:
-      "I built my first full-stack project using Dersify's roadmap. The explanations are personalized — it knew what I was going to get wrong before I did.",
-    name: 'Hodan Ali',
-    tag: 'Self-taught developer · Somalia',
-    chip: 'Built 3 production projects',
+    title: 'University students studying alone',
+    body:
+      'You have lectures, PDFs, assignments, and deadlines, but not enough personal support. Dersify helps you understand the topic before exam week panic.',
+    tag: 'Courses / exams',
+    chip: 'Review what is shaky before it disappears',
     prominent: true,
   },
   {
-    quote:
-      'The diagnostic system is a game changer. I focus only on what I need to learn. No wasted sessions, no review of things I already know.',
-    name: 'Yusuf Hassan',
-    tag: 'University student · Kenya',
-    chip: 'Improved 68% faster than self-study',
+    title: 'Course collectors who want mastery',
+    body:
+      'You have started courses on Coursera, Udemy, or YouTube, but progress keeps fading. Dersify gives the learning journey continuity.',
+    tag: 'Courses / mastery',
+    chip: 'Stop restarting from lesson one',
     prominent: false,
   },
 ];
 
-function Initial({ name }: { name: string }) {
+function Initial({ label }: { label: string }) {
   return (
     <span
       className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
@@ -40,7 +40,7 @@ function Initial({ name }: { name: string }) {
         border: '1px solid var(--accent-soft-border)',
       }}
     >
-      {name[0]}
+      {label[0]}
     </span>
   );
 }
@@ -53,10 +53,10 @@ export function Testimonials() {
           className="text-center text-[12.5px] font-semibold uppercase tracking-[0.08em]"
           style={{ color: 'var(--accent)' }}
         >
-          Real learners
+          Who it is for
         </p>
         <h2
-          className="mt-4 text-center"
+          className="mx-auto mt-4 max-w-[720px] text-center"
           style={{
             fontFamily: 'var(--font-display)',
             fontSize: 'clamp(1.75rem, 3vw, 2.5rem)',
@@ -66,20 +66,20 @@ export function Testimonials() {
             color: 'var(--text-primary)',
           }}
         >
-          Real learners. Real outcomes.
+          For people who learn before anyone gives them permission.
         </h2>
 
         <div className="mt-14 grid grid-cols-1 items-stretch gap-5 lg:grid-cols-3">
-          {TESTIMONIALS.map((t, i) => (
+          {LEARNER_TYPES.map((learner, i) => (
             <motion.div
-              key={t.name}
+              key={learner.title}
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-80px' }}
               transition={{ duration: 0.5, ease: EASE, delay: i * 0.1 }}
               className="flex flex-col rounded-lg p-8"
               style={
-                t.prominent
+                learner.prominent
                   ? {
                       background: 'linear-gradient(180deg, var(--accent-soft), transparent), var(--bg-surface)',
                       border: '1px solid var(--accent-soft-border)',
@@ -92,32 +92,29 @@ export function Testimonials() {
                     }
               }
             >
-              <blockquote
-                className="flex-1 text-[17px] italic leading-relaxed"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                &ldquo;{t.quote}&rdquo;
-              </blockquote>
+              <p className="flex-1 text-[17px] leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                {learner.body}
+              </p>
               <div className="mt-6 flex items-center gap-3">
-                <Initial name={t.name} />
+                <Initial label={learner.title} />
                 <div>
                   <p className="text-[15px] font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    {t.name}
+                    {learner.title}
                   </p>
                   <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-                    {t.tag}
+                    {learner.tag}
                   </p>
                 </div>
               </div>
               <span
-                className="mt-6 w-max rounded-full px-3 py-1 text-xs font-medium"
+                className="mt-6 w-max max-w-full rounded-full px-3 py-1 text-xs font-medium"
                 style={{
                   background: 'var(--accent-soft)',
                   border: '1px solid var(--accent-soft-border)',
                   color: 'var(--text-accent)',
                 }}
               >
-                {t.chip}
+                {learner.chip}
               </span>
             </motion.div>
           ))}

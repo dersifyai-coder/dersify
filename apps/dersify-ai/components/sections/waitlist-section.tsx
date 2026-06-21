@@ -47,16 +47,16 @@ export function WaitlistSection() {
               color: 'var(--text-primary)',
             }}
           >
-            What will you understand{' '}
-            <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>by tonight?</em>
+            Be one of the first learners{' '}
+            <em style={{ color: 'var(--accent)', fontStyle: 'italic' }}>Dersify is built around.</em>
           </h2>
 
           <p
             className="mx-auto mt-5 max-w-[480px] text-lg leading-relaxed"
             style={{ color: 'var(--text-secondary)' }}
           >
-            Join the waitlist and be among the first to experience Dersify when we
-            launch. Free to join. No credit card required.
+            Join the early access list if you are teaching yourself something
+            difficult and want a tutor that remembers your progress.
           </p>
 
           <div className="mt-8 text-left">
@@ -64,7 +64,7 @@ export function WaitlistSection() {
           </div>
 
           <p className="mt-4 text-[13px]" style={{ color: 'var(--text-muted)' }}>
-            2,400+ learners waiting · No spam · Unsubscribe anytime
+            Early access. No spam. No credit card.
           </p>
         </motion.div>
       </div>

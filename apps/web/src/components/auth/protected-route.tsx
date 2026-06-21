@@ -16,8 +16,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-white px-6 text-navy">
-        <p className="text-sm text-navy/70">Loading...</p>
+      <main className="flex min-h-screen items-center justify-center bg-white px-6 text-text-primary">
+        <p className="text-sm text-text-secondary">Loading...</p>
       </main>
     );
   }

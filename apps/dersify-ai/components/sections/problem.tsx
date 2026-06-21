@@ -5,21 +5,22 @@ import { X, Check } from 'lucide-react';
 import { EASE } from '@/lib/utils';
 
 const OTHER_TOOLS = [
-  'Resets to zero each session',
-  'No memory of your struggles',
-  'Same pace for every learner',
-  'Teaches from the beginning every time',
-  "Can't detect what you misunderstood",
-  "No concept of what's due for review",
+  'YouTube shows the same lesson to everyone',
+  'Coursera and Udemy courses cannot see where you are stuck',
+  'ChatGPT answers the moment, then loses the learning journey',
+  'Your notes, questions, code, and progress stay scattered',
+  'Misunderstandings disappear instead of becoming part of the plan',
+  'You decide what to review even when you are not sure',
 ];
 
 const DERSIFY = [
-  'Builds a permanent model of your mind',
-  'Remembers every struggle, every breakthrough',
-  'Adapts pace, depth, and approach in real-time',
-  'Starts exactly where you left off, every time',
-  'Detects and corrects misconceptions automatically',
-  "Knows which concepts you're about to forget",
+  'Builds a persistent learner model around you',
+  'Tracks what you understand, forget, and confuse',
+  'Adapts pace, depth, and examples to your responses',
+  'Starts from your real history, not a blank chat',
+  'Turns misconceptions into targeted correction plans',
+  'Connects your sources, sessions, and progress over time',
+  'Schedules review before concepts slip away',
 ];
 
 export function Problem() {
@@ -48,15 +49,15 @@ export function Problem() {
             color: 'var(--text-primary)',
           }}
         >
-          Traditional AI tutors reset to zero the moment you close the tab.
+          The internet gives self-learners content. It does not give them memory.
         </motion.h2>
 
         <p
           className="mx-auto mt-5 max-w-[560px] text-center text-lg leading-relaxed"
           style={{ color: 'var(--text-secondary)' }}
         >
-          You re-explain yourself every session. Your progress is invisible. The AI has
-          no idea what you struggled with last week.
+          The hard part is no longer finding explanations. It is knowing what you
+          actually understand, what you misunderstood, and what to learn next.
         </p>
 
         <div className="mt-14 grid grid-cols-1 gap-5 lg:grid-cols-2">
@@ -75,7 +76,7 @@ export function Problem() {
             <div className="flex items-center gap-3">
               <span className="h-2 w-2 rounded-full" style={{ background: 'var(--text-muted)' }} />
               <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-                Every other tool
+                Static content and blank chats
               </h3>
             </div>
             <ul className="mt-6 space-y-4">

@@ -6,10 +6,10 @@ import { EASE } from '@/lib/utils';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
 
 const STATS: { value: number; suffix: string; label: string }[] = [
-  { value: 4,   suffix: 'B+', label: "People we're building for" },
-  { value: 150, suffix: '+',  label: 'Countries reached on launch' },
-  { value: 12,  suffix: '+',  label: 'Languages supported' },
-  { value: 1,   suffix: '',   label: 'Mission: expand human potential' },
+  { value: 3, suffix: '', label: 'Layers of learner context' },
+  { value: 6, suffix: '', label: 'Misconception types tracked' },
+  { value: 14, suffix: '', label: 'Day topic memory window' },
+  { value: 1, suffix: '', label: 'Tutor that starts from you' },
 ];
 
 export function Mission() {
@@ -30,7 +30,7 @@ export function Mission() {
             className="text-[12.5px] font-semibold uppercase tracking-[0.08em]"
             style={{ color: 'var(--green-300)' }}
           >
-            Our mission
+            Why we are building it
           </p>
           <h2
             className="mt-4"
@@ -43,31 +43,30 @@ export function Mission() {
               color: '#FFFFFF',
             }}
           >
-            Built in Somalia.{' '}
+            Built by a self-learner.{' '}
             <br />
-            <em style={{ color: 'var(--green-300)', fontStyle: 'italic' }}>Built for the world.</em>
+            <em style={{ color: 'var(--green-300)', fontStyle: 'italic' }}>
+              Built for everyone teaching themselves.
+            </em>
           </h2>
           <p
-            className="mt-5 max-w-[480px] text-lg leading-relaxed"
+            className="mt-5 max-w-[500px] text-lg leading-relaxed"
             style={{ color: 'rgba(255,255,255,0.65)' }}
           >
-            We&apos;re building the operating system for human learning — starting in
-            Africa, scaling globally, and opening the future for every learner,
-            everywhere. Quality education should not depend on your postcode.
+            Dersify starts from a simple truth: many ambitious learners do not have
+            a private tutor, a perfect course, or someone watching their progress.
+            The product is being built for those people first.
           </p>
           <a
-            href="#"
+            href="#waitlist"
             className="mt-8 inline-flex items-center gap-2 text-base font-medium transition-colors duration-200"
             style={{ color: 'rgba(255,255,255,0.85)' }}
           >
-            Read our mission <ArrowRight size={16} />
+            Join early access <ArrowRight size={16} />
           </a>
         </motion.div>
 
-        <div
-          className="relative"
-          aria-hidden
-        >
+        <div className="relative" aria-hidden>
           <div
             className="pointer-events-none absolute inset-0"
             style={{
