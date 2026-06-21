@@ -34,7 +34,7 @@ export function AnimatedCounter({
   }, [isInView, from, to, duration]);
 
   return (
-    <span ref={ref} className={cn('gradient-text font-mono', className)}>
+    <span ref={ref} className={cn('font-mono', className)}>
       {value.toLocaleString()}
       {suffix}
     </span>

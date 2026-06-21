@@ -1,18 +1,18 @@
 import type { Metadata } from 'next';
-import { Sora, JetBrains_Mono } from 'next/font/google';
+import { Hanken_Grotesk, IBM_Plex_Mono } from 'next/font/google';
+import '@dersify/design-system/styles.css';
 import './globals.css';
 
-const sora = Sora({
+const hankenGrotesk = Hanken_Grotesk({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-sora',
+  variable: '--font-hanken',
   display: 'swap',
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const ibmPlexMono = IBM_Plex_Mono({
   subsets: ['latin'],
-  weight: ['400'],
-  variable: '--font-jetbrains-mono',
+  weight: ['400', '500', '600'],
+  variable: '--font-ibm-plex-mono',
   display: 'swap',
 });
 
@@ -47,7 +47,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${sora.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${hankenGrotesk.variable} ${ibmPlexMono.variable}`}>
       <body>{children}</body>
     </html>
   );

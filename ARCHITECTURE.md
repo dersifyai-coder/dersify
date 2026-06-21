@@ -80,7 +80,7 @@ dersify/
 | Auth client | @supabase/ssr |
 | Server state | TanStack Query v5 |
 | Forms | react-hook-form + Zod |
-| Fonts | Sora (headings), JetBrains Mono (code) via next/font |
+| Fonts | Hanken Grotesk (UI/body), IBM Plex Mono (code/data) via next/font |
 
 ### Backend — `apps/api`
 
@@ -129,20 +129,24 @@ dersify/
 
 ## 5. Brand System
 
+Production source of truth: `packages/design-system/tokens/*.css` and `packages/design-system/styles.css`.
+
 ```
-Primary Blue : #1B4FDB  → Tailwind: text-primary / bg-primary
-Teal         : #0D9488  → Tailwind: text-teal / bg-teal
-Deep Navy    : #0A1628  → Tailwind: text-navy / bg-navy
-Amber (warn) : #F59E0B  → Tailwind: text-amber / bg-amber
-Gradient     : 135deg from #1B4FDB to #0D9488
+Base canvas      : #FBFCFB  -> --bg-base
+Surface          : #FFFFFF  -> --bg-surface
+Subtle surface   : #F5F7F5  -> --bg-subtle
+Primary accent   : #0F7A45  -> --accent
+Accent hover     : #0C6539  -> --accent-hover
+Accent active    : #0A512F  -> --accent-active
+Inverse surface  : #0B2E1E  -> --bg-inverse
+Primary text     : #131815  -> --text-primary
 
 Fonts:
-  Headings : Sora (--font-sora)
-  Code     : JetBrains Mono (--font-jetbrains-mono)
-  Body     : Sora 400
+  UI/body : Hanken Grotesk (--font-sans)
+  Code    : IBM Plex Mono (--font-mono)
 ```
 
-All colors defined as CSS custom properties in `globals.css` only. Never hardcode hex values anywhere else.
+All UI color usage should reference the production CSS custom properties through the design-system utilities or Tailwind token aliases. Do not create alternate brand directions outside the production token system.
 
 ---
 

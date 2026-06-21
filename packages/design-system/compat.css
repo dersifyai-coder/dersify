@@ -1,0 +1,12 @@
+:root {
+  --font-display: var(--font-hanken);
+  --font-sans: var(--font-hanken);
+  --font-mono: var(--font-ibm-plex-mono);
+
+  --primary: var(--accent);
+
+  --bg-surface-2: var(--bg-subtle);
+  --text-subtle: var(--text-secondary);
+  --border: var(--border-default);
+  --border-accent: var(--accent-soft-border);
+}

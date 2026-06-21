@@ -8,6 +8,7 @@
     "start": "next start --port 3002"
   },
   "dependencies": {
+    "@dersify/design-system": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-toast": "^1.2.6",
     "@supabase/ssr": "^0.6.1",

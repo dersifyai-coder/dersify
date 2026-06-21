@@ -1,0 +1,9 @@
+/* ============================================================
+   Dersify — Webfonts
+   Loaded from Google Fonts CDN (brand has no proprietary faces).
+   Hanken Grotesk → the single premium grotesk: display + UI + body
+                    (400–800; 800 for tight, heavy hero display)
+   IBM Plex Mono  → mono for data, stats, knowledge-map labels
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');

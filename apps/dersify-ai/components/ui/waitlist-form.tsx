@@ -7,11 +7,18 @@ import { CheckCircle, Loader2, ArrowRight } from 'lucide-react';
 interface WaitlistFormProps {
   source?: string;
   size?: 'default' | 'large';
+  placeholder?: string;
+  buttonLabel?: string;
 }
 
 const initialState: WaitlistActionResult | null = null;
 
-export function WaitlistForm({ source = 'landing', size = 'default' }: WaitlistFormProps) {
+export function WaitlistForm({
+  source = 'landing',
+  size = 'default',
+  placeholder = 'Enter your email address',
+  buttonLabel = 'Join the waitlist',
+}: WaitlistFormProps) {
   const [state, formAction, isPending] = useActionState(joinWaitlist, initialState);
   const [referrer, setReferrer] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -56,13 +63,13 @@ export function WaitlistForm({ source = 'landing', size = 'default' }: WaitlistF
           ref={inputRef}
           type="email"
           name="email"
-          placeholder="Enter your email address"
+          placeholder={placeholder}
           required
           autoComplete="email"
           disabled={isPending}
           aria-label="Email address"
           aria-describedby={state && !state.success ? 'waitlist-error' : undefined}
-          className={`flex-1 rounded-md outline-none transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${isLarge ? 'h-[52px] px-5 text-base' : 'h-[46px] px-4 text-[15px]'}`}
+          className={`min-w-0 flex-1 outline-none transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${isLarge ? 'h-[56px] rounded-xl px-5 text-base' : 'h-[46px] rounded-md px-4 text-[15px]'}`}
           style={{
             background: 'var(--bg-raised)',
             border: state && !state.success
@@ -85,10 +92,11 @@ export function WaitlistForm({ source = 'landing', size = 'default' }: WaitlistF
         <button
           type="submit"
           disabled={isPending}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-md font-semibold transition-opacity duration-150 disabled:cursor-not-allowed disabled:opacity-60 hover:opacity-90 ${isLarge ? 'h-[52px] px-7 text-base' : 'h-[46px] px-6 text-[15px]'}`}
+          className={`inline-flex shrink-0 items-center justify-center gap-2 font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 hover:-translate-y-0.5 hover:opacity-95 ${isLarge ? 'h-[56px] rounded-xl px-7 text-base' : 'h-[46px] rounded-md px-6 text-[15px]'}`}
           style={{
             background: 'var(--accent)',
             color: 'var(--accent-contrast)',
+            boxShadow: isLarge ? 'var(--glow-accent)' : undefined,
           }}
         >
           {isPending ? (
@@ -98,7 +106,7 @@ export function WaitlistForm({ source = 'landing', size = 'default' }: WaitlistF
             </>
           ) : (
             <>
-              <span>Join the waitlist</span>
+              <span>{buttonLabel}</span>
               <ArrowRight size={16} />
             </>
           )}

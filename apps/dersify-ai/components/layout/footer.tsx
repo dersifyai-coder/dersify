@@ -4,16 +4,27 @@ import { Twitter, Linkedin, Github, Youtube } from 'lucide-react';
 
 const COLUMNS = [
   {
-    label: 'Product',
-    links: ['Features', 'Knowledge map', 'Adaptive learning', 'Pricing'],
+    label: 'Learn',
+    links: [
+      { label: 'The problem', href: '#problem' },
+      { label: 'The method', href: '#how-it-works' },
+      { label: 'Learner model', href: '#intelligence-engine' },
+      { label: 'Use cases', href: '#features' },
+    ],
   },
   {
-    label: 'Company',
-    links: ['About', 'Careers', 'Blog'],
+    label: 'Access',
+    links: [
+      { label: 'Join waitlist', href: '#waitlist' },
+      { label: 'Why we are building it', href: '#mission' },
+    ],
   },
   {
     label: 'Legal',
-    links: ['Privacy', 'Terms'],
+    links: [
+      { label: 'Privacy', href: '#' },
+      { label: 'Terms', href: '#' },
+    ],
   },
 ];
 
@@ -90,15 +101,15 @@ export function Footer() {
               </p>
               <ul className="mt-4 space-y-2.5">
                 {col.links.map((link) => (
-                  <li key={link}>
+                  <li key={link.label}>
                     <a
-                      href="#"
+                      href={link.href}
                       className="text-sm transition-colors duration-200"
                       style={{ color: 'var(--text-secondary)' }}
                       onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--text-primary)')}
                       onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)')}
                     >
-                      {link}
+                      {link.label}
                     </a>
                   </li>
                 ))}

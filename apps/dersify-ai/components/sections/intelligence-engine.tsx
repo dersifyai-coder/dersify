@@ -14,8 +14,8 @@ interface EngineCard {
 const CARDS: EngineCard[] = [
   {
     Icon: User,
-    title: 'Your learning style',
-    body: 'How you learn best. How you react when stuck. Your pace preference. Captured once during onboarding and used in every session forever.',
+    title: 'Your learning profile',
+    body: 'Why you are learning, how much time you have, how you respond when stuck, and whether you want depth, speed, or project-first learning.',
     extra: (
       <pre
         className="mt-3 rounded-md px-3 py-2 text-xs leading-relaxed"
@@ -26,26 +26,26 @@ const CARDS: EngineCard[] = [
           color: 'var(--text-accent)',
         }}
       >
-        {'motivation: "career-advance"\npace: "steady"\nwhen_stuck: "explain-differently"'}
+        {'motivation: "build-project"\npace: "steady"\nwhen_stuck: "explain-differently"'}
       </pre>
     ),
   },
   {
     Icon: BarChart3,
     title: 'Your knowledge state',
-    body: "Every concept you've ever studied — confidence level, last review date, next due date. FSRS calculates exactly when you're about to forget.",
+    body: "Every concept you touch: what is new, learning, understood, mastered, and due for review. FSRS helps Dersify choose the next useful review moment.",
     extra: (
       <p className="mt-3 text-xs" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
         Mastered <span style={{ color: 'var(--accent)' }}>18</span>
-        {' · '}Slipping <span style={{ color: 'var(--warning)' }}>4</span>
-        {' · '}Due today <span style={{ color: 'var(--text-primary)' }}>2</span>
+        {' / '}Shaky <span style={{ color: 'var(--warning)' }}>4</span>
+        {' / '}Due today <span style={{ color: 'var(--text-primary)' }}>2</span>
       </p>
     ),
   },
   {
     Icon: AlertTriangle,
     title: 'Your active misconceptions',
-    body: 'Dersify tracks where your mental model is wrong — the type, the severity, and the exact strategy to fix it — then addresses it in the next session.',
+    body: 'Dersify tracks where your mental model is wrong, the type of mistake, how serious it is, and the correction strategy to use next time.',
     extra: (
       <pre
         className="mt-3 rounded-md px-3 py-2 text-xs leading-relaxed"
@@ -62,8 +62,8 @@ const CARDS: EngineCard[] = [
   },
   {
     Icon: Target,
-    title: 'Your calibration score',
-    body: 'Dersify tracks the gap between how confident you are and how you actually perform. Over time it knows whether to trust your self-assessments — or probe deeper.',
+    title: 'Your calibration signal',
+    body: 'Dersify compares confidence with demonstrated understanding, so the tutor knows when to trust your answer and when to ask one more question.',
     extra: (
       <div className="mt-3">
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.875rem', fontWeight: 700, color: 'var(--accent)' }}>
@@ -79,13 +79,13 @@ const CARDS: EngineCard[] = [
 
 export function IntelligenceEngine() {
   return (
-    <section className="py-16 lg:py-24" style={{ background: 'var(--bg-base)' }}>
+    <section id="intelligence-engine" className="py-16 lg:py-24" style={{ background: 'var(--bg-base)' }}>
       <div className="mx-auto max-w-[1200px] px-6 lg:px-12">
         <p
           className="text-center text-[12.5px] font-semibold uppercase tracking-[0.08em]"
           style={{ color: 'var(--accent)' }}
         >
-          The intelligence engine
+          The learner model
         </p>
         <h2
           className="mx-auto mt-4 max-w-[700px] text-center"
@@ -98,14 +98,14 @@ export function IntelligenceEngine() {
             color: 'var(--text-primary)',
           }}
         >
-          Before your first message, the AI already knows.
+          The tutor remembers what normal AI forgets.
         </h2>
         <p
           className="mx-auto mt-5 max-w-[600px] text-center text-lg leading-relaxed"
           style={{ color: 'var(--text-secondary)' }}
         >
-          While other AI tutors wait for you to explain yourself, Dersify assembles a
-          complete picture of who you are before the session begins.
+          Dersify is not a blank chat. It carries your history, misconceptions,
+          sources, pace, and review schedule into every session.
         </p>
 
         <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-2">
