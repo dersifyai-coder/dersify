@@ -43,7 +43,9 @@ export class AiService {
     const googleApiKey = this.configService.get('googleAi', { infer: true })?.apiKey ?? '';
     const openaiApiKey = this.configService.get('openai', { infer: true })?.apiKey ?? '';
     this.geminiClient = new GoogleGenerativeAI(googleApiKey);
-    this.openaiClient = new OpenAI({ apiKey: openaiApiKey });
+    // OpenAI SDK throws on empty string; use a placeholder so the server boots
+    // without keys configured — actual calls will fail at call time, not init time.
+    this.openaiClient = new OpenAI({ apiKey: openaiApiKey || 'not-configured' });
   }
 
   async chat(

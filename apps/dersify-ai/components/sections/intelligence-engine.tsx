@@ -6,7 +6,6 @@ import { EASE } from '@/lib/utils';
 
 interface EngineCard {
   Icon: LucideIcon;
-  iconColor: string;
   title: string;
   body: string;
   extra: React.ReactNode;
@@ -15,48 +14,64 @@ interface EngineCard {
 const CARDS: EngineCard[] = [
   {
     Icon: User,
-    iconColor: '#0D9488',
     title: 'Your learning style',
     body: 'How you learn best. How you react when stuck. Your pace preference. Captured once during onboarding and used in every session forever.',
     extra: (
-      <pre className="mt-3 rounded-md bg-black/20 px-3 py-2 font-mono text-xs leading-relaxed text-teal">
+      <pre
+        className="mt-3 rounded-md px-3 py-2 text-xs leading-relaxed"
+        style={{
+          fontFamily: 'var(--font-mono)',
+          background: 'var(--bg-subtle)',
+          border: '1px solid var(--border-default)',
+          color: 'var(--text-accent)',
+        }}
+      >
         {'motivation: "career-advance"\npace: "steady"\nwhen_stuck: "explain-differently"'}
       </pre>
     ),
   },
   {
     Icon: BarChart3,
-    iconColor: '#1B4FDB',
     title: 'Your knowledge state',
-    body: "Every concept you've ever studied — confidence level, last review date, next due date. FSRS algorithm calculates exactly when you're about to forget.",
+    body: "Every concept you've ever studied — confidence level, last review date, next due date. FSRS calculates exactly when you're about to forget.",
     extra: (
-      <p className="mt-3 font-mono text-xs text-[#9CA3AF]">
-        Mastered <span className="text-teal">18</span> · Slipping{' '}
-        <span className="text-amber">4</span> · Due today{' '}
-        <span className="text-white">2</span>
+      <p className="mt-3 text-xs" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+        Mastered <span style={{ color: 'var(--accent)' }}>18</span>
+        {' · '}Slipping <span style={{ color: 'var(--warning)' }}>4</span>
+        {' · '}Due today <span style={{ color: 'var(--text-primary)' }}>2</span>
       </p>
     ),
   },
   {
     Icon: AlertTriangle,
-    iconColor: '#F59E0B',
     title: 'Your active misconceptions',
     body: 'Dersify tracks where your mental model is wrong — the type, the severity, and the exact strategy to fix it — then addresses it in the next session.',
     extra: (
-      <pre className="mt-3 rounded-md bg-black/20 px-3 py-2 font-mono text-xs leading-relaxed text-teal">
-        {'concept: "dependency injection"\ntype: "causal_inversion"\nremedy: "Prompt comparison with ..."'}
+      <pre
+        className="mt-3 rounded-md px-3 py-2 text-xs leading-relaxed"
+        style={{
+          fontFamily: 'var(--font-mono)',
+          background: 'var(--bg-subtle)',
+          border: '1px solid var(--border-default)',
+          color: 'var(--text-accent)',
+        }}
+      >
+        {'concept: "dependency injection"\ntype: "causal_inversion"\nremedy: "Prompt comparison..."'}
       </pre>
     ),
   },
   {
     Icon: Target,
-    iconColor: '#0D9488',
     title: 'Your calibration score',
     body: 'Dersify tracks the gap between how confident you are and how you actually perform. Over time it knows whether to trust your self-assessments — or probe deeper.',
     extra: (
       <div className="mt-3">
-        <span className="font-mono text-3xl text-teal">-0.4</span>
-        <p className="mt-1 text-xs text-[#9CA3AF]">slightly overestimates</p>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.875rem', fontWeight: 700, color: 'var(--accent)' }}>
+          -0.4
+        </span>
+        <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+          slightly overestimates
+        </p>
       </div>
     ),
   },
@@ -64,33 +79,60 @@ const CARDS: EngineCard[] = [
 
 export function IntelligenceEngine() {
   return (
-    <section className="border-y border-white/[0.06] bg-white/[0.02] py-16 lg:py-24">
+    <section className="py-16 lg:py-24" style={{ background: 'var(--bg-base)' }}>
       <div className="mx-auto max-w-[1200px] px-6 lg:px-12">
-        <p className="text-center text-[13px] font-medium uppercase tracking-[0.1em] text-teal">
-          The Intelligence Engine
+        <p
+          className="text-center text-[12.5px] font-semibold uppercase tracking-[0.08em]"
+          style={{ color: 'var(--accent)' }}
+        >
+          The intelligence engine
         </p>
-        <h2 className="mx-auto mt-4 max-w-[700px] text-center text-[32px] font-bold leading-[1.15] tracking-[-0.02em] text-white lg:text-5xl">
+        <h2
+          className="mx-auto mt-4 max-w-[700px] text-center"
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(1.75rem, 3vw, 2.5rem)',
+            fontWeight: 500,
+            letterSpacing: '-0.025em',
+            lineHeight: 1.2,
+            color: 'var(--text-primary)',
+          }}
+        >
           Before your first message, the AI already knows.
         </h2>
-        <p className="mx-auto mt-5 max-w-[600px] text-center text-lg leading-[1.7] text-[#9CA3AF]">
+        <p
+          className="mx-auto mt-5 max-w-[600px] text-center text-lg leading-relaxed"
+          style={{ color: 'var(--text-secondary)' }}
+        >
           While other AI tutors wait for you to explain yourself, Dersify assembles a
-          complete picture of who you are and where your knowledge stands before the
-          session begins.
+          complete picture of who you are before the session begins.
         </p>
 
-        <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-2">
           {CARDS.map((card, i) => (
             <motion.div
               key={card.title}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-80px' }}
               transition={{ duration: 0.5, ease: EASE, delay: i * 0.08 }}
-              className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-6 transition-colors duration-200 hover:border-blue/40 hover:bg-blue/[0.03]"
+              className="rounded-lg p-6"
+              style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-default)',
+                boxShadow: 'var(--shadow-sm)',
+              }}
             >
-              <card.Icon size={32} style={{ color: card.iconColor }} />
-              <h3 className="mt-4 text-[17px] font-semibold text-white">{card.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[#9CA3AF]">{card.body}</p>
+              <card.Icon size={28} style={{ color: 'var(--accent)' }} />
+              <h3
+                className="mt-4 text-[17px] font-semibold"
+                style={{ color: 'var(--text-primary)', letterSpacing: '-0.01em' }}
+              >
+                {card.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                {card.body}
+              </p>
               {card.extra}
             </motion.div>
           ))}

@@ -26,10 +26,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const res = exception.getResponse();
       message = typeof res === 'string' ? res : (res as Record<string, unknown>).message as string ?? message;
     } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
-      if (exception.code === 'P2002') {
+      // instanceof guards runtime; explicit cast needed because tsc doesn't narrow 'unknown' via instanceof with Prisma types
+      const e = exception as Prisma.PrismaClientKnownRequestError;
+      if (e.code === 'P2002') {
         status = HttpStatus.CONFLICT;
         message = 'A record with this value already exists.';
-      } else if (exception.code === 'P2025') {
+      } else if (e.code === 'P2025') {
         status = HttpStatus.NOT_FOUND;
         message = 'Record not found.';
       }

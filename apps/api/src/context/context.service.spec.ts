@@ -43,12 +43,14 @@ function makeMisconception(overrides: Record<string, unknown> = {}) {
     topic: 'javascript',
     description: 'Thinks closures only apply to inner functions',
     misconceptionType: 'overgeneralization',
+    severity: 'surface',
     remediationStrategy: 'Show counter-example with outer scope access',
     frequency: 2,
     resolved: false,
     resolvedInSession: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    concept: { displayName: 'Closures' },
     ...overrides,
   };
 }
@@ -203,8 +205,8 @@ describe('ContextService', () => {
         makeMisconception({ remediationStrategy: null }),
       ]);
       const { systemPrompt } = await buildPrompt();
-      expect(systemPrompt).toContain('js.closures');
-      // When remediationStrategy is null the " — <strategy>" suffix must not appear
+      expect(systemPrompt).toContain('Closures');
+      // When remediationStrategy is null the Remediation line must not appear
       expect(systemPrompt).not.toContain('Show counter-example with outer scope access');
     });
   });

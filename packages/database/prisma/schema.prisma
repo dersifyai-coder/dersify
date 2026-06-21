@@ -114,6 +114,7 @@ model Misconception {
   // 'causal_inversion'|'false_analogy'|'structural'
 
   remediationStrategy String? @map("remediation_strategy") // AI-generated
+  severity            String  @default("surface") @map("severity") // 'surface'|'deep'
   frequency           Int     @default(1)
   resolved            Boolean @default(false)
   resolvedInSession   String? @map("resolved_in_session") @db.Uuid // session where resolved
@@ -220,9 +221,10 @@ model LearnerSource {
   sourceType String @map("source_type") // 'pdf'|'text'|'url'|'youtube'
   title      String
   sourceRef  String @map("source_ref") // storage path, URL, or YouTube ID
-  status     String @default("processing") // 'processing'|'ready'|'failed'
-  chunkCount Int    @default(0) @map("chunk_count")
-  createdAt  DateTime @default(now()) @map("created_at")
+  status        String  @default("processing") // 'processing'|'ready'|'failed'
+  chunkCount    Int     @default(0) @map("chunk_count")
+  errorMessage  String? @map("error_message")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   learner Profile       @relation(fields: [learnerId], references: [id], onDelete: Cascade)
   chunks  SourceChunk[]

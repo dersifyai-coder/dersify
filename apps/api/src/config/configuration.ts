@@ -19,6 +19,12 @@ export interface AppConfig {
   redis: {
     url: string;
   };
+  jina: {
+    apiKey: string;
+  };
+  youtube: {
+    apiKey: string;
+  };
   sentry: {
     dsn: string;
   };
@@ -38,6 +44,8 @@ export default function configuration(): AppConfig {
     anthropic: { apiKey: process.env.ANTHROPIC_API_KEY ?? '' },
     openai: { apiKey: process.env.OPENAI_API_KEY ?? '' },
     redis: { url: process.env.UPSTASH_REDIS_URL ?? 'redis://localhost:6379' },
+    jina: { apiKey: process.env.JINA_API_KEY ?? '' },
+    youtube: { apiKey: process.env.YOUTUBE_API_KEY ?? '' },
     sentry: { dsn: process.env.SENTRY_DSN ?? '' },
   };
 }

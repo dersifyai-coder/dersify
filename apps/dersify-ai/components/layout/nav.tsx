@@ -1,32 +1,28 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import * as Dialog from '@radix-ui/react-dialog';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const NAV_LINKS = [
-  { label: 'How it works', href: '#how-it-works' },
+  { label: 'Method', href: '#how-it-works' },
   { label: 'Features', href: '#features' },
-  { label: 'For Institutions', href: '#mission' },
+  { label: 'For institutions', href: '#mission' },
   { label: 'Pricing', href: '#waitlist' },
 ];
 
-function Logo() {
+function ConstellationMark({ size = 26 }: { size?: number }) {
   return (
-    <a href="#" className="flex items-center">
-      <svg width="28" height="28" viewBox="0 0 28 28">
-        <defs>
-          <linearGradient id="nav-lg" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#1B4FDB" />
-            <stop offset="100%" stopColor="#0D9488" />
-          </linearGradient>
-        </defs>
-        <path d="M14 2L26 14L14 26L2 14Z" fill="url(#nav-lg)" />
-        <path d="M14 8L20 14L14 20L8 14Z" fill="rgba(10,22,40,0.6)" />
-      </svg>
-      <span className="ml-[10px] text-lg font-semibold text-white">Dersify</span>
-    </a>
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden>
+      <path d="M9.5 9.5L9.5 22.5" stroke="var(--border-strong)" strokeWidth="1.6" />
+      <path d="M9.5 9.5L22.5 16" stroke="var(--border-strong)" strokeWidth="1.6" />
+      <path d="M9.5 22.5L22.5 16" stroke="var(--accent-soft-border)" strokeWidth="1.8" />
+      <path d="M22.5 16L21 27" stroke="var(--border-strong)" strokeWidth="1.6" />
+      <circle cx="9.5" cy="9.5" r="2.5" fill="var(--n-300)" />
+      <circle cx="9.5" cy="22.5" r="2.5" fill="var(--accent-2)" />
+      <circle cx="21" cy="27" r="2" fill="var(--n-300)" />
+      <circle cx="22.5" cy="16" r="3.6" fill="var(--accent)" />
+    </svg>
   );
 }
 
@@ -47,89 +43,102 @@ export function Nav() {
 
   return (
     <header
-      className="fixed inset-x-0 top-0 z-50 transition-[background-color,backdrop-filter] duration-300"
+      className="fixed inset-x-0 top-0 z-50 transition-all duration-300"
       style={{
-        backgroundColor: scrolled ? 'rgba(10,22,40,0.8)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(24px)' : 'none',
+        backgroundColor: scrolled ? 'rgba(251,252,251,0.85)' : 'transparent',
+        backdropFilter: scrolled ? 'var(--blur-overlay)' : 'none',
+        WebkitBackdropFilter: scrolled ? 'var(--blur-overlay)' : 'none',
+        borderBottom: scrolled ? '1px solid var(--border-subtle)' : '1px solid transparent',
       }}
     >
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6 lg:px-12">
-        <Logo />
+        <a href="#" className="flex items-center gap-2.5">
+          <ConstellationMark />
+          <span
+            className="text-[21px] font-semibold"
+            style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.03em', color: 'var(--text-primary)' }}
+          >
+            Dersify
+          </span>
+        </a>
 
         <nav className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
             <a
               key={link.label}
               href={link.href}
-              className="text-sm font-medium text-[#9CA3AF] transition-colors duration-200 hover:text-white"
+              className="text-sm font-medium transition-colors duration-200"
+              style={{ color: 'var(--text-secondary)' }}
+              onMouseEnter={(e) => ((e.target as HTMLElement).style.color = 'var(--text-primary)')}
+              onMouseLeave={(e) => ((e.target as HTMLElement).style.color = 'var(--text-secondary)')}
             >
               {link.label}
             </a>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-4 md:flex">
-          <Button variant="ghost" size="sm" className="px-2">
-            Log in
-          </Button>
-          <button
-            onClick={scrollToWaitlist}
-            className="gradient-bg rounded-[10px] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_rgba(27,79,219,0.4)] transition-transform duration-200 hover:scale-[1.02]"
+        <div className="hidden items-center gap-3 md:flex">
+          <a
+            href="/auth/login"
+            className="text-sm font-medium transition-colors duration-200"
+            style={{ color: 'var(--text-secondary)' }}
           >
-            Join Waitlist →
-          </button>
+            Sign in
+          </a>
+          <Button variant="primary" size="sm" onClick={scrollToWaitlist}>
+            Start learning
+          </Button>
         </div>
 
-        {/* Mobile menu */}
-        <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
-          <Dialog.Trigger asChild>
-            <button
-              className="text-white md:hidden"
-              aria-label="Open navigation menu"
-            >
-              <Menu size={24} />
-            </button>
-          </Dialog.Trigger>
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-navy/95 backdrop-blur-xl md:hidden" />
-            <Dialog.Content className="fixed inset-0 z-50 flex flex-col p-6 md:hidden">
-              <Dialog.Title className="sr-only">Navigation</Dialog.Title>
-              <div className="flex h-16 items-center justify-between">
-                <Logo />
-                <Dialog.Close asChild>
-                  <button className="text-white" aria-label="Close navigation menu">
-                    <X size={24} />
-                  </button>
-                </Dialog.Close>
-              </div>
-              <nav className="mt-12 flex flex-col gap-8">
-                {NAV_LINKS.map((link) => (
-                  <a
-                    key={link.label}
-                    href={link.href}
-                    onClick={() => setMenuOpen(false)}
-                    className="text-2xl font-semibold text-white"
-                  >
-                    {link.label}
-                  </a>
-                ))}
-              </nav>
-              <div className="mt-auto flex flex-col gap-4">
-                <Button variant="outline">Log in</Button>
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    scrollToWaitlist();
-                  }}
-                  className="gradient-bg rounded-[10px] px-7 py-3.5 text-base font-semibold text-white shadow-[0_0_20px_rgba(27,79,219,0.4)]"
-                >
-                  Join Waitlist →
-                </button>
-              </div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
+        {/* Mobile */}
+        <button
+          className="md:hidden"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          onClick={() => setMenuOpen((v) => !v)}
+          style={{ color: 'var(--text-primary)' }}
+        >
+          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
       </div>
+
+      {/* Mobile drawer */}
+      {menuOpen && (
+        <div
+          className="md:hidden"
+          style={{
+            background: 'var(--bg-surface)',
+            borderBottom: '1px solid var(--border-default)',
+          }}
+        >
+          <nav className="flex flex-col gap-1 px-6 pb-6 pt-2">
+            {NAV_LINKS.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                className="py-2.5 text-base font-medium"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {link.label}
+              </a>
+            ))}
+            <div className="mt-4 flex flex-col gap-3 border-t pt-4" style={{ borderColor: 'var(--border-subtle)' }}>
+              <a href="/auth/login" className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Sign in
+              </a>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setMenuOpen(false);
+                  scrollToWaitlist();
+                }}
+              >
+                Start learning
+              </Button>
+            </div>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

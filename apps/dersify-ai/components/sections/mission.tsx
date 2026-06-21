@@ -6,67 +6,94 @@ import { EASE } from '@/lib/utils';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
 
 const STATS: { value: number; suffix: string; label: string }[] = [
-  { value: 4, suffix: 'B+', label: "People we're building for" },
-  { value: 150, suffix: '+', label: 'Countries reached on launch' },
-  { value: 12, suffix: '+', label: 'Languages supported' },
-  { value: 1, suffix: '', label: 'Mission: expand human potential' },
+  { value: 4,   suffix: 'B+', label: "People we're building for" },
+  { value: 150, suffix: '+',  label: 'Countries reached on launch' },
+  { value: 12,  suffix: '+',  label: 'Languages supported' },
+  { value: 1,   suffix: '',   label: 'Mission: expand human potential' },
 ];
 
 export function Mission() {
   return (
-    <section id="mission" className="bg-[#060E1A] py-16 lg:py-24">
+    <section
+      id="mission"
+      className="py-16 lg:py-24"
+      style={{ background: 'var(--bg-inverse)' }}
+    >
       <div className="mx-auto grid max-w-[1200px] grid-cols-1 items-center gap-16 px-6 lg:grid-cols-2 lg:px-12">
-        {/* LEFT */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.5, ease: EASE }}
         >
-          <p className="text-[13px] font-medium uppercase tracking-[0.1em] text-teal">
-            Our Mission
+          <p
+            className="text-[12.5px] font-semibold uppercase tracking-[0.08em]"
+            style={{ color: 'var(--green-300)' }}
+          >
+            Our mission
           </p>
-          <h2 className="mt-4 text-4xl font-bold leading-[1.15] tracking-[-0.02em] lg:text-5xl">
-            <span className="text-white">Built in Somalia.</span>
+          <h2
+            className="mt-4"
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(2rem, 4vw, 3rem)',
+              fontWeight: 500,
+              letterSpacing: '-0.025em',
+              lineHeight: 1.15,
+              color: '#FFFFFF',
+            }}
+          >
+            Built in Somalia.{' '}
             <br />
-            <span className="gradient-text">Built for the world.</span>
+            <em style={{ color: 'var(--green-300)', fontStyle: 'italic' }}>Built for the world.</em>
           </h2>
-          <p className="mt-5 max-w-[480px] text-lg leading-[1.7] text-[#9CA3AF]">
+          <p
+            className="mt-5 max-w-[480px] text-lg leading-relaxed"
+            style={{ color: 'rgba(255,255,255,0.65)' }}
+          >
             We&apos;re building the operating system for human learning — starting in
             Africa, scaling globally, and opening the future for every learner,
             everywhere. Quality education should not depend on your postcode.
           </p>
           <a
             href="#"
-            className="mt-8 inline-flex items-center gap-2 text-base font-medium text-white transition-colors hover:text-teal"
+            className="mt-8 inline-flex items-center gap-2 text-base font-medium transition-colors duration-200"
+            style={{ color: 'rgba(255,255,255,0.85)' }}
           >
             Read our mission <ArrowRight size={16} />
           </a>
         </motion.div>
 
-        {/* RIGHT */}
-        <div className="relative">
-          {/* Dotted world-map style background */}
+        <div
+          className="relative"
+          aria-hidden
+        >
           <div
-            aria-hidden
             className="pointer-events-none absolute inset-0"
             style={{
-              backgroundImage:
-                'radial-gradient(rgba(27,79,219,0.15) 1.5px, transparent 1.5px)',
+              backgroundImage: 'radial-gradient(rgba(34,178,107,0.15) 1.5px, transparent 1.5px)',
               backgroundSize: '18px 18px',
-              maskImage:
-                'radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 75%)',
-              WebkitMaskImage:
-                'radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 75%)',
+              maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 75%)',
+              WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 75%)',
             }}
           />
           <div className="relative grid grid-cols-2 gap-10">
             {STATS.map((stat) => (
               <div key={stat.label}>
-                <p className="text-5xl font-bold">
+                <p
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '3rem',
+                    fontWeight: 700,
+                    letterSpacing: '-0.03em',
+                    color: '#FFFFFF',
+                  }}
+                >
                   <AnimatedCounter to={stat.value} suffix={stat.suffix} />
                 </p>
-                <p className="mt-2 text-sm text-[#9CA3AF]">{stat.label}</p>
+                <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  {stat.label}
+                </p>
               </div>
             ))}
           </div>

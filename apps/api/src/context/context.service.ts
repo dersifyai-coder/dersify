@@ -1,11 +1,12 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { LearnerService } from '../learner/learner.service';
+import { ConceptWithState, LearnerService, MisconceptionWithConcept } from '../learner/learner.service';
 import { RagService } from '../rag/rag.service';
 import { ContextBudgetManager } from './context-budget.manager';
 import { MOTIVATION_FRAMING } from './motivation-framing';
 import { MODE_INSTRUCTIONS } from './mode-shifts';
 import { SessionInsights } from './session-insights';
+import { buildFocusInstruction } from '../session/focus-heuristic';
 
 export interface ContextResult {
   systemPrompt: string;
@@ -80,18 +81,24 @@ export class ContextService {
 
     const calibration = this.buildCalibrationLine(profile.calibrationScore);
 
-    const confirmedNames = knowledgeSummary.confirmed.map((c) => c.displayName).join(', ') || 'None yet';
-    const shakyNames = knowledgeSummary.shaky.map((c) => c.displayName).join(', ') || 'None';
-    const newNames = knowledgeSummary.newConcepts.map((c) => c.displayName).join(', ') || 'None';
+    const confirmedNames = knowledgeSummary.confirmed.map((c: ConceptWithState) => c.displayName).join(', ') || 'None yet';
+    const shakyNames = knowledgeSummary.shaky.map((c: ConceptWithState) => c.displayName).join(', ') || 'None';
+    const newNames = knowledgeSummary.newConcepts.map((c: ConceptWithState) => c.displayName).join(', ') || 'None';
 
     const misconceptionLines =
       misconceptions.length > 0
         ? misconceptions
             .slice(0, 5)
-            .map(
-              (m) =>
-                `• ${m.conceptId}: ${m.description} (Type: ${m.misconceptionType})${m.remediationStrategy ? ` — ${m.remediationStrategy}` : ''}`,
-            )
+            .map((m: MisconceptionWithConcept) => {
+              const lines = [
+                `• ${m.concept.displayName}: ${m.description}`,
+                `  Type: ${m.misconceptionType} | Severity: ${m.severity}`,
+              ];
+              if (m.remediationStrategy) {
+                lines.push(`  Remediation: ${m.remediationStrategy}`);
+              }
+              return lines.join('\n');
+            })
             .join('\n')
         : 'No active misconceptions on this topic.';
 
@@ -132,15 +139,25 @@ export class ContextService {
         ? insights.conceptsConfirmed.join(', ')
         : 'None yet';
 
-    return [
+    const focusState = insights.focusState ?? 'focus';
+    const focusInstruction = buildFocusInstruction(focusState);
+
+    const lines = [
       `CURRENT SESSION STATE:`,
       `Mode: ${insights.currentMode} — ${modeInstruction}`,
       `Phase: ${insights.currentPhase}`,
+      `Focus state: ${focusState}`,
       `Struggle ratio this session: ${insights.struggleSignals} struggles, ${insights.momentumSignals} momentum signals`,
       `New misconceptions this session (not yet in permanent model):`,
       newMisconceptions,
       `Concepts confirmed this session: ${confirmedThisSession}`,
-    ].join('\n');
+    ];
+
+    if (focusInstruction) {
+      lines.splice(4, 0, `Focus instruction: ${focusInstruction}`);
+    }
+
+    return lines.join('\n');
   }
 
   private buildRules(): string {
@@ -156,6 +173,13 @@ export class ContextService {
       `- Respond in the learner's language if they write in a language other than English.`,
       `- Never use the word "Dersify" more than once per session.`,
       `- Never mention modes, calibration scores, or internal system state to the learner.`,
+      ``,
+      `MISCONCEPTION HANDLING:`,
+      `When you detect that a misconception listed above is surfacing again in the learner's response:`,
+      `- Do NOT simply re-explain the correct concept.`,
+      `- Use the remediation strategy listed above for that specific misconception.`,
+      `- After addressing it, ask a follow-up to confirm the misconception has been resolved.`,
+      `- If resolved: it will be marked resolved in the next session update.`,
     ].join('\n');
   }
 
@@ -177,7 +201,7 @@ export class ContextService {
       orderBy: { turnIndex: 'asc' },
     });
 
-    return messages.map((m) => ({
+    return messages.map((m: typeof messages[number]) => ({
       role: m.role as 'user' | 'assistant',
       content:
         m.compressed && m.compressionSummary != null ? m.compressionSummary : m.content,
