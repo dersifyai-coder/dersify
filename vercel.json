@@ -2,5 +2,5 @@
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @dersify/marketing build",
-  "outputDirectory": "apps/dersify-ai/.next"
+  "outputDirectory": ".next"
 }
