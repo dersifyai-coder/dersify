@@ -246,7 +246,8 @@ export function Hero() {
               color: 'var(--text-primary)',
             }}
           >
-            Stop restarting every time you study.
+            Learn anything,
+            the way you think.
           </motion.h1>
 
           <motion.p
@@ -254,9 +255,7 @@ export function Hero() {
             className="mt-6 max-w-[560px] text-lg leading-relaxed sm:text-xl"
             style={{ color: 'var(--text-secondary)' }}
           >
-            YouTube, Coursera, Udemy, docs, and ChatGPT can explain. Dersify is an
-            AI-native learning system that understands how you learn, remembers your
-            progress, identifies misconceptions, and helps you master anything.
+            YouTube, Coursera, Udemy, docs, and ChatGPT can explain but they don’t know when you’re stuck. Dersify understands how you learn, tracks your progress, finds misconceptions, and helps you truly master anything.
           </motion.p>
 
           <motion.p

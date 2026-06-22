@@ -67,6 +67,7 @@ export function WaitlistForm({
           required
           autoComplete="email"
           disabled={isPending}
+          suppressHydrationWarning
           aria-label="Email address"
           aria-describedby={state && !state.success ? 'waitlist-error' : undefined}
           className={`min-w-0 flex-1 outline-none transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${isLarge ? 'h-[56px] rounded-xl px-5 text-base' : 'h-[46px] rounded-md px-4 text-[15px]'}`}
