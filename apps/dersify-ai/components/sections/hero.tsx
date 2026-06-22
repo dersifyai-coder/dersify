@@ -255,7 +255,7 @@ export function Hero() {
             className="mt-6 max-w-[560px] text-lg leading-relaxed sm:text-xl"
             style={{ color: 'var(--text-secondary)' }}
           >
-            YouTube, Coursera, Udemy, docs, and ChatGPT can explain but they don’t know when you’re stuck. Dersify understands how you learn, tracks your progress, finds misconceptions, and helps you truly master anything.
+            YouTube, Coursera, Udemy, docs, and ChatGPT can explain but they don’t know when you’re stuck. Dersify doesn’t just explain — it learns how you learn, tracks your progress, spots misconceptions, and helps you master anything.
           </motion.p>
 
           <motion.p
